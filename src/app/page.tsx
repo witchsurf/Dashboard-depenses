@@ -184,7 +184,6 @@ export default function DashboardPage() {
                                             <TimeSeriesChart
                                                 data={data.timeSeriesData}
                                                 title=""
-                                                height={250}
                                             />
                                         </GlassCard>
                                     )}
@@ -230,7 +229,6 @@ export default function DashboardPage() {
                                     <TimeSeriesChart
                                         data={data.timeSeriesData}
                                         title="Revenus vs Dépenses"
-                                        height={350}
                                     />
                                 </GlassCard>
                                 <div className="grid lg:grid-cols-2 gap-6">
