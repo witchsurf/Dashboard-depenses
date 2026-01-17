@@ -1,11 +1,22 @@
 import { NextResponse } from 'next/server';
-import { getSheetsConfig } from '@/lib/sheets';
+import { createClient } from '@supabase/supabase-js';
 
 export const dynamic = 'force-dynamic';
 
+// Initialize Supabase client
+function getSupabaseClient() {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+    if (!url || !key) {
+        return null;
+    }
+
+    return createClient(url, key);
+}
+
 /**
- * API to save expense to Google Sheets
- * POST /api/expenses - Add new expense
+ * POST /api/expenses - Add new expense to Supabase
  */
 export async function POST(request: Request) {
     try {
@@ -20,24 +31,45 @@ export async function POST(request: Request) {
             );
         }
 
-        const config = getSheetsConfig();
+        const supabase = getSupabaseClient();
 
-        if (!config) {
-            // API not configured, just acknowledge receipt
+        if (!supabase) {
             return NextResponse.json({
                 success: true,
                 synced: false,
-                message: 'Saved locally (Google Sheets API not configured)',
+                message: 'Saved locally (Supabase not configured)',
             });
         }
 
-        // TODO: Implement Google Sheets append when credentials are properly configured
-        // For now, we'll use the CSV approach which is read-only
+        // Insert into Supabase
+        const { data, error } = await supabase
+            .from('expenses')
+            .insert([{
+                date,
+                amount,
+                category,
+                subcategory,
+                description,
+                synced_from_local: false,
+            }])
+            .select()
+            .single();
+
+        if (error) {
+            console.error('Supabase insert error:', error);
+            return NextResponse.json({
+                success: true,
+                synced: false,
+                message: 'Saved locally (database error)',
+                error: error.message,
+            });
+        }
 
         return NextResponse.json({
             success: true,
-            synced: false,
-            message: 'Saved locally (sync pending)',
+            synced: true,
+            message: 'Saved to database',
+            data,
         });
 
     } catch (error) {
@@ -53,11 +85,103 @@ export async function POST(request: Request) {
 }
 
 /**
- * GET /api/expenses - Get local expenses summary
+ * GET /api/expenses - Get expenses from Supabase
  */
-export async function GET() {
-    return NextResponse.json({
-        success: true,
-        message: 'Use localStorage on client for expenses',
-    });
+export async function GET(request: Request) {
+    try {
+        const supabase = getSupabaseClient();
+
+        if (!supabase) {
+            return NextResponse.json({
+                success: false,
+                error: 'Supabase not configured',
+            });
+        }
+
+        const { searchParams } = new URL(request.url);
+        const startDate = searchParams.get('startDate');
+        const endDate = searchParams.get('endDate');
+        const category = searchParams.get('category');
+        const limit = searchParams.get('limit');
+
+        let query = supabase
+            .from('expenses')
+            .select('*')
+            .order('date', { ascending: false });
+
+        if (startDate) query = query.gte('date', startDate);
+        if (endDate) query = query.lte('date', endDate);
+        if (category) query = query.eq('category', category);
+        if (limit) query = query.limit(parseInt(limit));
+
+        const { data, error } = await query;
+
+        if (error) {
+            throw error;
+        }
+
+        return NextResponse.json({
+            success: true,
+            data,
+            count: data?.length || 0,
+        });
+
+    } catch (error) {
+        console.error('Expense GET Error:', error);
+        return NextResponse.json(
+            {
+                success: false,
+                error: error instanceof Error ? error.message : 'Unknown error'
+            },
+            { status: 500 }
+        );
+    }
+}
+
+/**
+ * DELETE /api/expenses - Delete expense from Supabase
+ */
+export async function DELETE(request: Request) {
+    try {
+        const { searchParams } = new URL(request.url);
+        const id = searchParams.get('id');
+
+        if (!id) {
+            return NextResponse.json(
+                { success: false, error: 'Missing expense ID' },
+                { status: 400 }
+            );
+        }
+
+        const supabase = getSupabaseClient();
+
+        if (!supabase) {
+            return NextResponse.json({
+                success: false,
+                error: 'Supabase not configured',
+            });
+        }
+
+        const { error } = await supabase
+            .from('expenses')
+            .delete()
+            .eq('id', id);
+
+        if (error) throw error;
+
+        return NextResponse.json({
+            success: true,
+            message: 'Expense deleted',
+        });
+
+    } catch (error) {
+        console.error('Expense DELETE Error:', error);
+        return NextResponse.json(
+            {
+                success: false,
+                error: error instanceof Error ? error.message : 'Unknown error'
+            },
+            { status: 500 }
+        );
+    }
 }

@@ -52,7 +52,7 @@ export function AddExpenseModal({ isOpen, onClose, onExpenseAdded }: AddExpenseM
                 return;
             }
 
-            // Save locally
+            // Save locally as backup
             saveLocalExpense({
                 date,
                 amount: numAmount,
@@ -61,22 +61,25 @@ export function AddExpenseModal({ isOpen, onClose, onExpenseAdded }: AddExpenseM
                 description: description || undefined,
             });
 
-            // Try to sync to Google Sheets
+            // Save to Supabase (if configured)
             try {
-                await fetch('/api/expenses', {
+                const response = await fetch('/api/expenses', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         date,
                         amount: numAmount,
                         category,
-                        subcategory,
-                        description,
+                        subcategory: subcategory || null,
+                        description: description || null,
                     }),
                 });
+
+                if (!response.ok) {
+                    console.log('Database save failed, kept in local storage');
+                }
             } catch {
-                // Sync failed, will retry later
-                console.log('Sync to Google Sheets failed, saved locally');
+                console.log('Sync failed, saved locally');
             }
 
             setShowSuccess(true);
