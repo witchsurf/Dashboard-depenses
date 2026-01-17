@@ -25,19 +25,16 @@ export async function GET(request: Request) {
         }
 
         const { searchParams } = new URL(request.url);
-        const year = parseInt(searchParams.get('year') || new Date().getFullYear().toString());
+        const year = parseInt(searchParams.get('year') || '2026');
+        const month = parseInt(searchParams.get('month') || '1');
 
-        // Get current month stats - use year and month from parameter or current date
-        const now = new Date();
-        const targetYear = year;
-        const targetMonth = now.getMonth() + 1; // 1-indexed
+        // Create date ranges for the target month
+        const monthStart = `${year}-${String(month).padStart(2, '0')}-01`;
+        const monthEnd = month === 12
+            ? `${year + 1}-01-01`
+            : `${year}-${String(month + 1).padStart(2, '0')}-01`;
 
-        const monthStart = `${targetYear}-${String(targetMonth).padStart(2, '0')}-01`;
-        const monthEnd = targetMonth === 12
-            ? `${targetYear + 1}-01-01`
-            : `${targetYear}-${String(targetMonth + 1).padStart(2, '0')}-01`;
-
-        console.log('Date filter:', { monthStart, monthEnd });
+        console.log('Date filter:', { year, month, monthStart, monthEnd });
 
         // Fetch expenses for current month
         const { data: monthlyExpenses, error: expenseError } = await supabase
