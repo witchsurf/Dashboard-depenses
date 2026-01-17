@@ -48,12 +48,12 @@ export async function GET(request: Request) {
 
         console.log('Monthly expenses found:', monthlyExpenses?.length, 'First:', monthlyExpenses?.[0]);
 
-        // Fetch income for current month
+        // Fetch income for current month - same style as expenses query
         const { data: monthlyIncome, error: incomeError } = await supabase
             .from('income')
-            .select('amount, source, date')
-            .gte('date', monthStart)
-            .lt('date', monthEnd);
+            .select('id, date, amount, source')
+            .gte('date', '2026-01-01')
+            .lt('date', '2026-02-01');
 
         if (incomeError) {
             console.error('Income query error:', incomeError);
