@@ -1,19 +1,21 @@
 'use client';
 
-import { ReactNode } from 'react';
+import { ReactNode, CSSProperties } from 'react';
 
 interface GlassCardProps {
     children: ReactNode;
     className?: string;
     hover?: boolean;
     padding?: 'none' | 'sm' | 'md' | 'lg';
+    style?: CSSProperties;
 }
 
 export function GlassCard({
     children,
     className = '',
     hover = true,
-    padding = 'md'
+    padding = 'md',
+    style
 }: GlassCardProps) {
     const paddingClasses = {
         none: '',
@@ -25,11 +27,12 @@ export function GlassCard({
     return (
         <div
             className={`
-        glass 
-        ${paddingClasses[padding]}
-        ${hover ? 'transition-all duration-300 hover:translate-y-[-4px] hover:shadow-xl' : ''}
-        ${className}
-      `}
+                glass 
+                ${paddingClasses[padding]}
+                ${hover ? 'transition-all duration-300 hover:translate-y-[-4px] hover:shadow-xl' : ''}
+                ${className}
+            `}
+            style={style}
         >
             {children}
         </div>
