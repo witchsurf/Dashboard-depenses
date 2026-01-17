@@ -104,8 +104,9 @@ export async function POST(request: Request) {
                             const year = y.length === 2 ? `20${y}` : y;
                             parsedDate = new Date(`${year}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`);
                         }
-                    } else if (date instanceof Date) {
-                        parsedDate = date;
+                    } else if (typeof date === 'object' && date !== null) {
+                        // Assume it's a Date-like object
+                        parsedDate = new Date(date as Date);
                     }
                 }
 
