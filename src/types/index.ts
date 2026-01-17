@@ -56,6 +56,8 @@ export interface DataSourceConfig {
     availableTabs?: string[];
     selectedTab?: string;
     error?: string;
+    statusMessage?: string;
+    lastUpdated?: string;
 }
 
 export interface DashboardState {
