@@ -17,22 +17,51 @@ interface SheetsConfig {
 }
 
 /**
+ * Normalize private key format
+ * Handles both escaped \n (from env files) and literal newlines (from Vercel UI)
+ */
+function normalizePrivateKey(key: string): string {
+    // Remove surrounding quotes if present
+    let normalized = key.trim();
+    if ((normalized.startsWith('"') && normalized.endsWith('"')) ||
+        (normalized.startsWith("'") && normalized.endsWith("'"))) {
+        normalized = normalized.slice(1, -1);
+    }
+
+    // Replace escaped newlines with actual newlines
+    normalized = normalized.replace(/\\n/g, '\n');
+
+    // Ensure proper PEM format
+    if (!normalized.includes('-----BEGIN')) {
+        throw new Error('Invalid private key format');
+    }
+
+    return normalized;
+}
+
+/**
  * Get configuration from environment variables
  */
 export function getSheetsConfig(): SheetsConfig | null {
     const serviceAccountEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
-    const privateKey = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n');
+    const rawPrivateKey = process.env.GOOGLE_PRIVATE_KEY;
     const sheetId = process.env.GOOGLE_SHEET_ID;
 
-    if (!serviceAccountEmail || !privateKey || !sheetId) {
+    if (!serviceAccountEmail || !rawPrivateKey || !sheetId) {
         return null;
     }
 
-    return {
-        serviceAccountEmail,
-        privateKey,
-        sheetId,
-    };
+    try {
+        const privateKey = normalizePrivateKey(rawPrivateKey);
+        return {
+            serviceAccountEmail,
+            privateKey,
+            sheetId,
+        };
+    } catch (error) {
+        console.error('Failed to parse private key:', error);
+        return null;
+    }
 }
 
 /**
