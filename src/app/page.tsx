@@ -11,7 +11,8 @@ import {
     DataTable,
     Filters,
     ConfigWizard,
-    AddExpenseModal
+    AddExpenseModal,
+    ExpenseHistory
 } from '@/components/dashboard';
 import { GlassButton, GlassCard, Badge } from '@/components/ui/GlassComponents';
 import { DashboardSkeleton, ErrorState } from '@/components/ui';
@@ -291,6 +292,12 @@ export default function DashboardPage() {
                             filters={filters}
                             onFiltersChange={setFilters}
                         />
+                    </section>
+                )}
+
+                {activeSection === 'history' && (
+                    <section>
+                        <ExpenseHistory onRefresh={() => loadData(false)} />
                     </section>
                 )}
 
