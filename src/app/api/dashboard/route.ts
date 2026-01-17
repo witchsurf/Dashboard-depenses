@@ -26,30 +26,45 @@ export async function GET(request: Request) {
 
         const { searchParams } = new URL(request.url);
         const year = parseInt(searchParams.get('year') || new Date().getFullYear().toString());
-        const month = searchParams.get('month') ? parseInt(searchParams.get('month')!) : null;
 
-        // Get current month stats
+        // Get current month stats - use year and month from parameter or current date
         const now = new Date();
-        const currentMonthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
-        const nextMonth = now.getMonth() === 11 ?
-            `${now.getFullYear() + 1}-01-01` :
-            `${now.getFullYear()}-${String(now.getMonth() + 2).padStart(2, '0')}-01`;
+        const targetYear = year;
+        const targetMonth = now.getMonth() + 1; // 1-indexed
+
+        const monthStart = `${targetYear}-${String(targetMonth).padStart(2, '0')}-01`;
+        const monthEnd = targetMonth === 12
+            ? `${targetYear + 1}-01-01`
+            : `${targetYear}-${String(targetMonth + 1).padStart(2, '0')}-01`;
+
+        console.log('Date filter:', { monthStart, monthEnd });
 
         // Fetch expenses for current month
         const { data: monthlyExpenses, error: expenseError } = await supabase
             .from('expenses')
             .select('amount, category, date')
-            .gte('date', currentMonthStart)
-            .lt('date', nextMonth);
+            .gte('date', monthStart)
+            .lt('date', monthEnd);
 
-        if (expenseError) throw expenseError;
+        if (expenseError) {
+            console.error('Expense query error:', expenseError);
+            throw expenseError;
+        }
+
+        console.log('Monthly expenses found:', monthlyExpenses?.length);
 
         // Fetch income for current month
         const { data: monthlyIncome, error: incomeError } = await supabase
             .from('income')
             .select('amount, source, date')
-            .gte('date', currentMonthStart)
-            .lt('date', nextMonth);
+            .gte('date', monthStart)
+            .lt('date', monthEnd);
+
+        if (incomeError) {
+            console.error('Income query error:', incomeError);
+        }
+
+        console.log('Monthly income found:', monthlyIncome?.length);
 
         // Calculate KPIs
         const totalExpenses = monthlyExpenses?.reduce((sum, e) => sum + e.amount, 0) || 0;
