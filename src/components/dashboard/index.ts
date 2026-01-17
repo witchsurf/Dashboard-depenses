@@ -8,4 +8,5 @@ export { Filters } from './Filters';
 export { ColumnMappingUI } from './ColumnMapping';
 export { ConfigWizard } from './ConfigWizard';
 export { AddExpenseModal } from './AddExpenseModal';
+export { AddIncomeModal } from './AddIncomeModal';
 export { ExpenseHistory } from './ExpenseHistory';

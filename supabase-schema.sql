@@ -1,97 +1,110 @@
 -- =============================================
--- SUPABASE SCHEMA FOR EXPENSE TRACKING
+-- SUPABASE FULL MIGRATION SCHEMA
 -- =============================================
--- Copy and paste this SQL in Supabase SQL Editor
--- Go to: https://supabase.com/dashboard → Your Project → SQL Editor
+-- Exécutez ce SQL dans Supabase SQL Editor
 
--- 1. Create expenses table
-CREATE TABLE IF NOT EXISTS expenses (
+-- 1. Table des revenus
+CREATE TABLE IF NOT EXISTS income (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     date DATE NOT NULL,
     amount DECIMAL(12, 2) NOT NULL,
-    category VARCHAR(50) NOT NULL,
-    subcategory VARCHAR(50),
+    source VARCHAR(100) NOT NULL,
     description TEXT,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    synced_from_local BOOLEAN DEFAULT FALSE
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- 2. Create indexes for faster queries
-CREATE INDEX IF NOT EXISTS idx_expenses_date ON expenses(date DESC);
-CREATE INDEX IF NOT EXISTS idx_expenses_category ON expenses(category);
-CREATE INDEX IF NOT EXISTS idx_expenses_date_category ON expenses(date, category);
+-- 2. Table des catégories
+CREATE TABLE IF NOT EXISTS categories (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR(50) NOT NULL UNIQUE,
+    type VARCHAR(20) NOT NULL DEFAULT 'expense', -- 'expense' ou 'income'
+    icon VARCHAR(10),
+    color VARCHAR(20),
+    budget_limit DECIMAL(12, 2),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
 
--- 3. Enable Row Level Security (optional but recommended)
-ALTER TABLE expenses ENABLE ROW LEVEL SECURITY;
+-- 3. Index pour les performances
+CREATE INDEX IF NOT EXISTS idx_income_date ON income(date DESC);
+CREATE INDEX IF NOT EXISTS idx_expenses_month ON expenses(date_trunc('month', date));
+CREATE INDEX IF NOT EXISTS idx_income_month ON income(date_trunc('month', date));
 
--- 4. Create policy to allow all operations (for simplicity)
--- In production, you'd want to restrict this to authenticated users
-CREATE POLICY "Allow all operations" ON expenses
-    FOR ALL
-    USING (true)
-    WITH CHECK (true);
+-- 4. Enable RLS
+ALTER TABLE income ENABLE ROW LEVEL SECURITY;
+ALTER TABLE categories ENABLE ROW LEVEL SECURITY;
 
--- 5. Create view for daily summary
-CREATE OR REPLACE VIEW daily_expenses AS
+-- 5. Policies (accès public pour simplifier)
+CREATE POLICY "Allow all on income" ON income FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Allow all on categories" ON categories FOR ALL USING (true) WITH CHECK (true);
+
+-- 6. Insérer les catégories prédéfinies
+INSERT INTO categories (name, type, icon, color) VALUES
+    ('MAISON', 'expense', '🏠', '#8B5CF6'),
+    ('ALIMENTATION', 'expense', '🍽️', '#06B6D4'),
+    ('TRANSPORT', 'expense', '🚗', '#F59E0B'),
+    ('SANTE', 'expense', '💊', '#EF4444'),
+    ('EDUCATION', 'expense', '📚', '#10B981'),
+    ('LOISIRS', 'expense', '🎮', '#EC4899'),
+    ('VETEMENTS', 'expense', '👕', '#3B82F6'),
+    ('ENFANTS', 'expense', '👶', '#84CC16'),
+    ('AUTRES', 'expense', '📦', '#6B7280'),
+    ('Salaire', 'income', '💰', '#10B981'),
+    ('Freelance', 'income', '💻', '#06B6D4'),
+    ('Investissements', 'income', '📈', '#8B5CF6'),
+    ('Autres revenus', 'income', '💵', '#F59E0B')
+ON CONFLICT (name) DO NOTHING;
+
+-- 7. Vue pour les KPIs du mois courant
+CREATE OR REPLACE VIEW monthly_kpis AS
 SELECT 
-    date,
-    SUM(amount) as total,
-    COUNT(*) as count,
-    ARRAY_AGG(DISTINCT category) as categories
-FROM expenses
-GROUP BY date
-ORDER BY date DESC;
+    DATE_TRUNC('month', CURRENT_DATE) as month,
+    COALESCE((SELECT SUM(amount) FROM income WHERE DATE_TRUNC('month', date) = DATE_TRUNC('month', CURRENT_DATE)), 0) as total_income,
+    COALESCE((SELECT SUM(amount) FROM expenses WHERE DATE_TRUNC('month', date) = DATE_TRUNC('month', CURRENT_DATE)), 0) as total_expenses,
+    COALESCE((SELECT SUM(amount) FROM income WHERE DATE_TRUNC('month', date) = DATE_TRUNC('month', CURRENT_DATE)), 0) -
+    COALESCE((SELECT SUM(amount) FROM expenses WHERE DATE_TRUNC('month', date) = DATE_TRUNC('month', CURRENT_DATE)), 0) as net_balance;
 
--- 6. Create view for category summary
-CREATE OR REPLACE VIEW category_summary AS
+-- 8. Vue pour les dépenses par catégorie
+CREATE OR REPLACE VIEW expenses_by_category AS
 SELECT 
     category,
     SUM(amount) as total,
     COUNT(*) as count,
-    AVG(amount) as average,
-    MIN(date) as first_expense,
-    MAX(date) as last_expense
+    DATE_TRUNC('month', date) as month
 FROM expenses
-GROUP BY category
+GROUP BY category, DATE_TRUNC('month', date)
 ORDER BY total DESC;
 
--- 7. Create view for monthly summary
-CREATE OR REPLACE VIEW monthly_summary AS
+-- 9. Vue pour l'évolution mensuelle
+CREATE OR REPLACE VIEW monthly_evolution AS
 SELECT 
     DATE_TRUNC('month', date) as month,
-    SUM(amount) as total,
-    COUNT(*) as count,
-    AVG(amount) as average
+    'expense' as type,
+    SUM(amount) as amount
 FROM expenses
 GROUP BY DATE_TRUNC('month', date)
-ORDER BY month DESC;
+UNION ALL
+SELECT 
+    DATE_TRUNC('month', date) as month,
+    'income' as type,
+    SUM(amount) as amount
+FROM income
+GROUP BY DATE_TRUNC('month', date)
+ORDER BY month;
 
--- 8. Function to get expenses by date range
-CREATE OR REPLACE FUNCTION get_expenses_in_range(start_date DATE, end_date DATE)
-RETURNS TABLE (
-    id UUID,
-    date DATE,
-    amount DECIMAL,
-    category VARCHAR,
-    subcategory VARCHAR,
-    description TEXT
-) AS $$
+-- 10. Fonction pour récupérer les stats du dashboard
+CREATE OR REPLACE FUNCTION get_dashboard_stats(p_year INT DEFAULT EXTRACT(YEAR FROM CURRENT_DATE))
+RETURNS JSON AS $$
+DECLARE
+    result JSON;
 BEGIN
-    RETURN QUERY
-    SELECT e.id, e.date, e.amount, e.category, e.subcategory, e.description
-    FROM expenses e
-    WHERE e.date BETWEEN start_date AND end_date
-    ORDER BY e.date DESC;
+    SELECT json_build_object(
+        'totalIncome', COALESCE((SELECT SUM(amount) FROM income WHERE EXTRACT(YEAR FROM date) = p_year), 0),
+        'totalExpenses', COALESCE((SELECT SUM(amount) FROM expenses WHERE EXTRACT(YEAR FROM date) = p_year), 0),
+        'netBalance', COALESCE((SELECT SUM(amount) FROM income WHERE EXTRACT(YEAR FROM date) = p_year), 0) - 
+                      COALESCE((SELECT SUM(amount) FROM expenses WHERE EXTRACT(YEAR FROM date) = p_year), 0),
+        'expenseCount', (SELECT COUNT(*) FROM expenses WHERE EXTRACT(YEAR FROM date) = p_year),
+        'incomeCount', (SELECT COUNT(*) FROM income WHERE EXTRACT(YEAR FROM date) = p_year)
+    ) INTO result;
+    RETURN result;
 END;
 $$ LANGUAGE plpgsql;
-
--- =============================================
--- SAMPLE DATA (optional - for testing)
--- =============================================
--- Uncomment to insert sample data
-
--- INSERT INTO expenses (date, amount, category, subcategory, description) VALUES
--- ('2024-01-15', 25000, 'ALIMENTATION', 'Courses', 'Supermarché'),
--- ('2024-01-15', 15000, 'TRANSPORT', 'Essence', 'Plein essence'),
--- ('2024-01-14', 5000, 'ALIMENTATION', 'Sorties', 'Restaurant'),
--- ('2024-01-13', 3500, 'SANTE', 'Médicaments', 'Pharmacie');
