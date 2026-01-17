@@ -104,10 +104,10 @@ export default function DashboardPage() {
                 }));
 
                 const categoryColumn = result.budgetStructure.categoryColumn as string;
-                const categories: string[] = categoryColumn
+                const categoriesRaw = categoryColumn
                     ? Array.from(new Set(sheetData.rows.map((row: Record<string, unknown>) => String(row[categoryColumn] || ''))))
-                        .filter((c: string) => c && c.trim() !== '')
                     : [];
+                const categories: string[] = (categoriesRaw as string[]).filter(c => c && c.trim() !== '');
 
                 const kpis = generateKPIsFromData(sheetData.rows, result.budgetStructure);
                 const timeSeriesData = generateTimeSeriesFromData(sheetData.rows, result.budgetStructure);
