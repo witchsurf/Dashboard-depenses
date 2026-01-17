@@ -62,9 +62,13 @@ export async function GET(request: Request) {
         console.log('Monthly income found:', monthlyIncome?.length);
 
         // Calculate KPIs
-        const totalExpenses = monthlyExpenses?.reduce((sum, e) => sum + e.amount, 0) || 0;
-        const totalIncome = monthlyIncome?.reduce((sum, i) => sum + i.amount, 0) || 0;
+        const totalExpenses = monthlyExpenses?.reduce((sum, e) => sum + Number(e.amount), 0) || 0;
+        const totalIncome = monthlyIncome?.reduce((sum, i) => sum + Number(i.amount), 0) || 0;
         const netBalance = totalIncome - totalExpenses;
+
+        // Debug - count items
+        const expenseCount = monthlyExpenses?.length || 0;
+        const incomeCount = monthlyIncome?.length || 0;
 
         // Group expenses by category
         const expensesByCategory: Record<string, number> = {};
@@ -152,6 +156,12 @@ export async function GET(request: Request) {
                 isConnected: true,
                 statusMessage: 'Connecté à Supabase',
                 lastUpdated: new Date().toISOString(),
+                debug: {
+                    expenseCount,
+                    incomeCount,
+                    monthStart,
+                    monthEnd,
+                }
             },
         });
 
