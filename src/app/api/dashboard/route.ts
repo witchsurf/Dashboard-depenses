@@ -24,31 +24,29 @@ export async function GET(request: Request) {
             }, { status: 500 });
         }
 
-        const { searchParams } = new URL(request.url);
-        const year = parseInt(searchParams.get('year') || '2026');
-        const month = parseInt(searchParams.get('month') || '1');
+        // V2 - Use same query as debug endpoint which works
+        const monthStart = '2026-01-01';
+        const monthEnd = '2026-02-01';
 
-        // Create date ranges for the target month
-        const monthStart = `${year}-${String(month).padStart(2, '0')}-01`;
-        const monthEnd = month === 12
-            ? `${year + 1}-01-01`
-            : `${year}-${String(month + 1).padStart(2, '0')}-01`;
+        console.log('Dashboard API V2 - Date filter:', { monthStart, monthEnd });
 
-        console.log('Date filter:', { year, month, monthStart, monthEnd });
-
-        // Fetch expenses for current month
+        // Fetch expenses for January 2026 - same as debug endpoint
         const { data: monthlyExpenses, error: expenseError } = await supabase
             .from('expenses')
-            .select('amount, category, date')
+            .select('id, date, amount, category')
             .gte('date', monthStart)
             .lt('date', monthEnd);
 
         if (expenseError) {
             console.error('Expense query error:', expenseError);
-            throw expenseError;
+            return NextResponse.json({
+                success: false,
+                error: expenseError.message,
+                version: 'v2'
+            }, { status: 500 });
         }
 
-        console.log('Monthly expenses found:', monthlyExpenses?.length);
+        console.log('Monthly expenses found:', monthlyExpenses?.length, 'First:', monthlyExpenses?.[0]);
 
         // Fetch income for current month
         const { data: monthlyIncome, error: incomeError } = await supabase
@@ -79,8 +77,8 @@ export async function GET(request: Request) {
             .sort((a, b) => b.value - a.value);
 
         // Get yearly data for time series
-        const yearStart = `${year}-01-01`;
-        const yearEnd = `${year}-12-31`;
+        const yearStart = '2026-01-01';
+        const yearEnd = '2026-12-31';
 
         const { data: yearlyExpenses } = await supabase
             .from('expenses')
