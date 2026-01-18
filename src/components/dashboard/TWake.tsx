@@ -2,9 +2,10 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { RefreshCw, Save, UploadCloud, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { RefreshCw, Save, UploadCloud, AlertCircle, CheckCircle2, Plus } from 'lucide-react';
 import { GlassCard, GlassButton } from '@/components/ui/GlassComponents';
 import { formatCurrency } from '@/lib/utils';
+import { AddProductModal } from './AddProductModal';
 
 interface Product {
     id: string;
@@ -31,6 +32,7 @@ export function TWake({ onSync }: TWakeProps) {
     const [isSyncing, setIsSyncing] = useState(false);
     const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+    const [showAddProduct, setShowAddProduct] = useState(false);
 
     // Load data
     const loadData = useCallback(async () => {
@@ -168,6 +170,16 @@ export function TWake({ onSync }: TWakeProps) {
 
                     <div className="flex gap-2">
                         <GlassButton
+                            onClick={() => setShowAddProduct(true)}
+                            variant="primary"
+                            className="mr-2"
+                        >
+                            <div className="flex items-center gap-2">
+                                <Plus className="w-4 h-4" />
+                                <span className="hidden sm:inline">Ajouter</span>
+                            </div>
+                        </GlassButton>
+                        <GlassButton
                             onClick={handleSave}
                             disabled={isSaving || !hasUnsavedChanges}
                             variant="primary"
@@ -259,6 +271,15 @@ export function TWake({ onSync }: TWakeProps) {
                     </table>
                 </div>
             </GlassCard>
+
+            <AddProductModal
+                isOpen={showAddProduct}
+                onClose={() => setShowAddProduct(false)}
+                onSuccess={() => {
+                    loadData();
+                    setMessage({ type: 'success', text: 'Produit ajouté avec succès' });
+                }}
+            />
         </div>
     );
 }

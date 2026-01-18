@@ -97,6 +97,7 @@ interface GlassInputProps {
     type?: 'text' | 'number' | 'email' | 'search';
     className?: string;
     disabled?: boolean;
+    required?: boolean;
     'aria-label'?: string;
 }
 
@@ -107,6 +108,7 @@ export function GlassInput({
     type = 'text',
     className = '',
     disabled = false,
+    required = false,
     'aria-label': ariaLabel,
 }: GlassInputProps) {
     return (
