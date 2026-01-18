@@ -109,11 +109,11 @@ export async function GET(request: Request) {
             };
         });
 
-        // Get recent transactions
+        // Get recent transactions (ordered by created_at to show newest first)
         const { data: recentExpenses } = await supabase
             .from('expenses')
             .select('*')
-            .order('date', { ascending: false })
+            .order('created_at', { ascending: false })
             .limit(10);
 
         return NextResponse.json({
