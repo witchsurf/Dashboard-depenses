@@ -82,6 +82,8 @@ export async function GET(request: Request) {
                 .from('t_wake_transactions')
                 .select(`
                     quantity,
+                    date,
+                    description,
                     product:t_wake_products (selling_price, unit_cost)
                 `)
                 .gte('date', '2026-01-01')
