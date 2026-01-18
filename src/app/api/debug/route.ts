@@ -20,6 +20,7 @@ export async function GET() {
         connection: null as any,
         expenseCount: 0,
         incomeCount: 0,
+        allExpenseIds: [] as string[],
         sampleExpenses: [] as any[],
         dateFilter: {
             start: '2026-01-01',
@@ -38,16 +39,19 @@ export async function GET() {
     try {
         const supabase = createClient(url, key);
 
-        // Test connection by counting expenses
-        const { count: totalExpenses, error: countError } = await supabase
+        // Test connection by getting all expenses from January 2026
+        const { data: allExpenses, error: expenseError } = await supabase
             .from('expenses')
-            .select('*', { count: 'exact', head: true });
+            .select('id, date')
+            .gte('date', '2026-01-01')
+            .lt('date', '2026-02-01');
 
-        if (countError) {
-            debugInfo.connection = { error: countError.message };
+        if (expenseError) {
+            debugInfo.connection = { error: expenseError.message };
         } else {
             debugInfo.connection = { status: 'OK' };
-            debugInfo.expenseCount = totalExpenses || 0;
+            debugInfo.expenseCount = allExpenses?.length || 0;
+            debugInfo.allExpenseIds = allExpenses?.map(e => e.id) || [];
         }
 
         // Get expenses for January 2026
