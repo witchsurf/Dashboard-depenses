@@ -258,7 +258,14 @@ export async function GET(request: Request) {
                 },
                 {
                     label: 'Transactions',
-                    value: (monthlyExpenses?.length || 0) + (monthlyIncome?.length || 0) + (tWakeTxs?.filter((t: any) => t.date !== '2026-01-01').length || 0),
+                    value: (monthlyExpenses?.length || 0) + (monthlyIncome?.length || 0) + (tWakeTxs?.filter((t: any) => {
+                        const dateStr = String(t.date || '');
+                        const descStr = String(t.description || '');
+                        // Filter out if date is Jan 1st OR description contains 'Import'
+                        if (dateStr.includes('2026-01-01')) return false;
+                        if (descStr.includes('Import')) return false;
+                        return true;
+                    }).length || 0),
                     format: 'number',
                     trend: 'stable',
                     color: '#8B5CF6',
@@ -276,7 +283,8 @@ export async function GET(request: Request) {
                     expenseCount,
                     incomeCount,
                     tWakeTotal: tWakeTxs?.length || 0,
-                    tWakeDateFiltered: tWakeTxs?.filter((t: any) => t.date !== '2026-01-01').length || 0,
+                    // Show dates of first 5 items to debug format if needed
+                    tWakeDates: tWakeTxs?.slice(0, 5).map((t: any) => t.date),
                     monthStart,
                     monthEnd,
                     monthlyExpenseIds: monthlyExpenses?.map(e => e.id) || []
