@@ -258,7 +258,7 @@ export async function GET(request: Request) {
                 },
                 {
                     label: 'Transactions',
-                    value: (monthlyExpenses?.length || 0) + (monthlyIncome?.length || 0) + (tWakeTxs?.length || 0),
+                    value: (monthlyExpenses?.length || 0) + (monthlyIncome?.length || 0) + (tWakeTxs?.filter((t: any) => t.description !== 'Import Initial').length || 0),
                     format: 'number',
                     trend: 'stable',
                     color: '#8B5CF6',
