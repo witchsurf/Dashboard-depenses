@@ -216,7 +216,13 @@ export async function GET(request: Request) {
                     type: 'income'
                 };
             }) || [])
-        ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+        ].sort((a, b) => {
+            // Sort by date (business date) first
+            const dateDiff = new Date(b.date).getTime() - new Date(a.date).getTime();
+            if (dateDiff !== 0) return dateDiff;
+            // Then by creation time (newest created first)
+            return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        })
             .slice(0, 10);
 
 
