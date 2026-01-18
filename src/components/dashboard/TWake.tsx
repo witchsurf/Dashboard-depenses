@@ -32,7 +32,6 @@ export function TWake({ onSync }: TWakeProps) {
     const [isSaving, setIsSaving] = useState(false);
     const [isSyncing, setIsSyncing] = useState(false);
     const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-    const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
     const [showAddProduct, setShowAddProduct] = useState(false);
     const [showAddSale, setShowAddSale] = useState(false);
@@ -198,7 +197,7 @@ export function TWake({ onSync }: TWakeProps) {
                         </GlassButton>
                         <GlassButton
                             onClick={() => setShowAddProduct(true)}
-                            variant="secondary"
+                            variant="default"
                             className="mr-2"
                         >
                             <div className="flex items-center gap-2">
