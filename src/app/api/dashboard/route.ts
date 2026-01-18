@@ -9,9 +9,19 @@ function getSupabaseClient() {
     const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
     if (!url || !key) return null;
     return createClient(url, key, {
+        auth: {
+            persistSession: false,
+        },
         global: {
-            headers: { 'Cache-Control': 'no-store' }
-        }
+            headers: { 'Cache-Control': 'no-store' },
+            fetch: (url, options) => {
+                return fetch(url, {
+                    ...options,
+                    cache: 'no-store',
+                    next: { revalidate: 0 },
+                });
+            },
+        },
     });
 }
 
