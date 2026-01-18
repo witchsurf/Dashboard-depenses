@@ -76,8 +76,9 @@ export async function GET(request: Request) {
 
         // --- NEW: Calculate T-WAKE Profit for Current Month ---
         let tWakeProfit = 0;
+        let tWakeTxs: any[] | null = [];
         try {
-            const { data: tWakeTxs, error: tWakeError } = await supabase
+            const result = await supabase
                 .from('t_wake_transactions')
                 .select(`
                     quantity,
@@ -85,6 +86,9 @@ export async function GET(request: Request) {
                 `)
                 .gte('date', '2026-01-01')
                 .lt('date', '2026-02-01');
+
+            tWakeTxs = result.data;
+            const tWakeError = result.error;
 
             if (!tWakeError && tWakeTxs) {
                 tWakeProfit = tWakeTxs.reduce((sum, t: any) => {
@@ -253,7 +257,7 @@ export async function GET(request: Request) {
                 },
                 {
                     label: 'Transactions',
-                    value: (monthlyExpenses?.length || 0) + (monthlyIncome?.length || 0),
+                    value: (monthlyExpenses?.length || 0) + (monthlyIncome?.length || 0) + (tWakeTxs?.length || 0),
                     format: 'number',
                     trend: 'stable',
                     color: '#8B5CF6',
