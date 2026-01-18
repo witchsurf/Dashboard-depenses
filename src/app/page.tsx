@@ -55,7 +55,8 @@ export default function DashboardPage() {
         setError(null);
 
         try {
-            const response = await fetch('/api/dashboard');
+            // Add timestamp to prevent browser caching
+            const response = await fetch(`/api/dashboard?t=${Date.now()}`);
             const result = await response.json();
 
             if (result.success) {
