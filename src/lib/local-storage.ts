@@ -19,51 +19,71 @@ export interface LocalExpense {
 // Default expense categories based on user's Google Sheet structure
 export const EXPENSE_CATEGORIES = [
     {
-        name: 'MAISON',
-        subcategories: ['Loyers/emprunt', 'Électricité/gaz', 'Eau', 'Ménage', 'Téléphones', 'Internet', 'Réparations', 'Équipements', 'Déco']
+        name: 'Maison',
+        subcategories: ['Loyers/emprunt', 'Électricité/gaz', 'Essence', 'Eau', 'Ménage', 'Téléphones portables', 'Internet', 'Cable/Satellite', 'Réparation/entretien', 'Équipements', 'Maintenance', 'Déco', 'Autre']
     },
     {
-        name: 'VIE QUOTIDIENNE',
-        subcategories: ['Courses', 'Habillement', 'Sorties', 'Coiffeur', 'Divers']
+        name: 'Vie Quotidienne',
+        subcategories: ['Courses', 'Argent de poche', 'Habillement', 'Sorties', 'Coiffeur', 'Divers']
     },
     {
-        name: 'ENFANTS',
-        subcategories: ['Habillement', 'Frais études', 'Argent de poche', 'Activités', 'Transports', 'Santé', 'Jeux/loisirs', 'Divers']
+        name: 'Enfants',
+        subcategories: ['Habillement/bijoux', 'Frais études', 'Argent de poche', 'Tél/internet', 'Activités', 'Transports', 'Santé', 'Nounou', 'Jeux/loisirs', 'Divers']
     },
     {
-        name: 'TRANSPORT',
-        subcategories: ['Essence/électricité', 'Réparations', 'Transport en commun', 'Taxi', 'Divers']
+        name: 'Transport',
+        subcategories: ['Voiture', 'Essence/électricité', 'Réparations/contrôles', 'Transport en commun', 'Bus/Taxi', 'Divers']
     },
     {
-        name: 'SANTÉ',
-        subcategories: ['Médecins/dentiste', 'Médicaments', 'Mutuelle', 'Urgences', 'Divers']
+        name: 'Santé',
+        subcategories: ['Médecins/dentiste', 'Médicaments/soins', 'Mutuelle', 'Urgences', 'Divers']
     },
     {
-        name: 'ASSURANCES',
+        name: 'Assurances',
         subcategories: ['Auto', 'Habitation', 'Assurance vie', 'Assurance scolaire']
     },
     {
-        name: 'ÉPARGNE',
-        subcategories: ['Épargne logement', 'Épargne Livret', 'Retraite', 'Investissements', 'Projets']
+        name: 'Dons',
+        subcategories: ['Cadeaux divers', 'Organisations', 'Communauté religieuse', 'Autre']
     },
     {
-        name: 'LOISIRS',
-        subcategories: ['Vidéos/DVDs', 'Musique', 'Jeux', 'Cinéma', 'Concerts', 'Livres', 'Sports', 'Sorties', 'Divers']
+        name: 'Épargne',
+        subcategories: ['Épargne logement', 'Livret', 'Retraite', 'Investissements', 'Projets', 'Divers']
     },
     {
-        name: 'DIVERS',
-        subcategories: ['Frais de banque', 'Remboursements prêts', 'Pressing', 'Autre']
+        name: 'Impôts',
+        subcategories: ['Impôt sur le revenu', 'Taxe habitation/foncière', 'Autre']
+    },
+    {
+        name: 'Loisirs',
+        subcategories: ['Vidéos/DVDs', 'Musique', 'Jeux', 'Locations', 'Cinéma', 'Concerts', 'Livres', 'Film/Photos', 'Sports', 'Sorties', 'Divers']
+    },
+    {
+        name: 'Animaux',
+        subcategories: ['Nourriture/entretien', 'Véto et soins', 'Divers']
+    },
+    {
+        name: 'Abonnements',
+        subcategories: ['Journaux/magazines', 'Club', 'Abo 1', 'Abo 2', 'Divers']
+    },
+    {
+        name: 'Vacances',
+        subcategories: ['Transport', 'Location', 'Repas', 'Location voiture', 'Visites/loisirs', 'Divers']
+    },
+    {
+        name: 'Divers',
+        subcategories: ['Frais de banque', 'Remboursements prêts', 'Cordonnier', 'Pressing', 'Autre']
     },
 ];
 
 // Quick access categories for daily expenses
 export const QUICK_CATEGORIES = [
-    { category: 'VIE QUOTIDIENNE', subcategory: 'Courses', icon: '🛒' },
-    { category: 'TRANSPORT', subcategory: 'Essence/électricité', icon: '⛽' },
-    { category: 'VIE QUOTIDIENNE', subcategory: 'Sorties', icon: '🍽️' },
-    { category: 'MAISON', subcategory: 'Électricité/gaz', icon: '💡' },
-    { category: 'SANTÉ', subcategory: 'Médicaments', icon: '💊' },
-    { category: 'ENFANTS', subcategory: 'Argent de poche', icon: '👶' },
+    { category: 'Vie Quotidienne', subcategory: 'Courses', icon: '🛒' },
+    { category: 'Transport', subcategory: 'Essence/électricité', icon: '⛽' },
+    { category: 'Vie Quotidienne', subcategory: 'Sorties', icon: '🍽️' },
+    { category: 'Maison', subcategory: 'Électricité/gaz', icon: '💡' },
+    { category: 'Santé', subcategory: 'Médicaments/soins', icon: '💊' },
+    { category: 'Enfants', subcategory: 'Argent de poche', icon: '👶' },
 ];
 
 const STORAGE_KEY = 'dashboard_expenses';

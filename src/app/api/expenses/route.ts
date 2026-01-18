@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { appendExpenseToSheet } from '@/lib/sheets';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,7 +17,7 @@ function getSupabaseClient() {
 }
 
 /**
- * POST /api/expenses - Add new expense to Supabase
+ * POST /api/expenses - Add new expense to Supabase and Google Sheets
  */
 export async function POST(request: Request) {
     try {
@@ -65,10 +66,28 @@ export async function POST(request: Request) {
             });
         }
 
+        // Sync to Google Sheets
+        let sheetSynced = false;
+        try {
+            const sheetResult = await appendExpenseToSheet(
+                category,
+                subcategory || '',
+                amount,
+                new Date(date)
+            );
+            sheetSynced = sheetResult.success;
+            if (!sheetResult.success && sheetResult.error) {
+                console.log('Google Sheets sync skipped:', sheetResult.error);
+            }
+        } catch (sheetError) {
+            console.log('Google Sheets sync error (non-blocking):', sheetError);
+        }
+
         return NextResponse.json({
             success: true,
             synced: true,
-            message: 'Saved to database',
+            sheetSynced,
+            message: sheetSynced ? 'Saved to database and Google Sheets' : 'Saved to database',
             data,
         });
 

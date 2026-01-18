@@ -83,7 +83,7 @@ async function createJWT(config: SheetsConfig): Promise<string> {
     const now = Math.floor(Date.now() / 1000);
     const payload = {
         iss: config.serviceAccountEmail,
-        scope: 'https://www.googleapis.com/auth/spreadsheets.readonly',
+        scope: 'https://www.googleapis.com/auth/spreadsheets', // Full access for read/write
         aud: 'https://oauth2.googleapis.com/token',
         exp: now + 3600,
         iat: now,
@@ -237,4 +237,163 @@ export async function fetchSheetData(tabName?: string): Promise<SheetData> {
         sheetName: tabName || 'Sheet1',
         lastUpdated: new Date(),
     };
+}
+
+/**
+ * Category to row mapping in Google Sheet (Budget worksheet)
+ * Maps category/subcategory to the row number in the sheet
+ */
+const CATEGORY_ROW_MAP: Record<string, number> = {
+    // Maison (starts at row 25)
+    'Maison/Loyers/emprunt': 25,
+    'Maison/Électricité/gaz': 26,
+    'Maison/Essence': 27,
+    'Maison/Eau': 28,
+    'Maison/Ménage': 29,
+    'Maison/Téléphones portables': 30,
+    'Maison/Internet': 31,
+    'Maison/Cable/Satellite': 32,
+    'Maison/Réparation/entretien': 33,
+    'Maison/Équipements': 34,
+    'Maison/Maintenance': 35,
+    'Maison/Déco': 36,
+    'Maison/Autre': 37,
+
+    // Vie Quotidienne (starts at row 41)
+    'Vie Quotidienne/Courses': 41,
+    'Vie Quotidienne/Argent de poche': 42,
+    'Vie Quotidienne/Habillement': 43,
+    'Vie Quotidienne/Sorties': 44,
+    'Vie Quotidienne/Coiffeur': 45,
+    'Vie Quotidienne/Divers': 46,
+
+    // Enfants (starts at row 50)
+    'Enfants/Habillement/bijoux': 50,
+    'Enfants/Frais études': 51,
+    'Enfants/Argent de poche': 52,
+    'Enfants/Tél/internet': 53,
+    'Enfants/Activités': 54,
+    'Enfants/Transports': 55,
+    'Enfants/Santé': 56,
+    'Enfants/Nounou': 57,
+    'Enfants/Jeux/loisirs': 58,
+    'Enfants/Divers': 59,
+
+    // Transport (starts at row 63)
+    'Transport/Voiture': 63,
+    'Transport/Essence/électricité': 64,
+    'Transport/Réparations/contrôles': 65,
+    'Transport/Transport en commun': 66,
+    'Transport/Bus/Taxi': 67,
+    'Transport/Divers': 68,
+
+    // Santé (starts at row 72)
+    'Santé/Médecins/dentiste': 72,
+    'Santé/Médicaments/soins': 73,
+    'Santé/Mutuelle': 74,
+    'Santé/Urgences': 75,
+    'Santé/Divers': 76,
+
+    // Assurances (starts at row 80)
+    'Assurances/Auto': 80,
+    'Assurances/Habitation': 81,
+    'Assurances/Assurance vie': 82,
+    'Assurances/Assurance scolaire': 83,
+
+    // Divers (starts at row 150)
+    'Divers/Frais de banque': 150,
+    'Divers/Remboursements prêts': 151,
+    'Divers/Cordonnier': 152,
+    'Divers/Pressing': 153,
+    'Divers/Autre': 154,
+};
+
+/**
+ * Month index to column letter mapping (B=JAN, C=FEB, etc.)
+ */
+const MONTH_COLUMNS = ['B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M'];
+
+/**
+ * Append expense to Google Sheet
+ * Adds the amount to the appropriate cell based on category, subcategory, and month
+ */
+export async function appendExpenseToSheet(
+    category: string,
+    subcategory: string,
+    amount: number,
+    date: Date
+): Promise<{ success: boolean; error?: string }> {
+    try {
+        const config = getSheetsConfig();
+        if (!config) {
+            return { success: false, error: 'Google Sheets not configured' };
+        }
+
+        const monthIndex = date.getMonth(); // 0-11
+        const column = MONTH_COLUMNS[monthIndex];
+
+        const key = `${category}/${subcategory}`;
+        const row = CATEGORY_ROW_MAP[key];
+
+        if (!row) {
+            console.log(`No row mapping found for ${key}, skipping Google Sheets sync`);
+            return { success: true }; // Not an error, just no mapping
+        }
+
+        const cellRange = `Budget!${column}${row}`;
+
+        // First, get current value
+        const accessToken = await getAccessToken(config);
+
+        const getResponse = await fetch(
+            `https://sheets.googleapis.com/v4/spreadsheets/${config.sheetId}/values/${encodeURIComponent(cellRange)}`,
+            {
+                headers: {
+                    Authorization: `Bearer ${accessToken}`,
+                },
+            }
+        );
+
+        let currentValue = 0;
+        if (getResponse.ok) {
+            const getData = await getResponse.json();
+            if (getData.values && getData.values[0] && getData.values[0][0]) {
+                currentValue = parseFrenchNumber(getData.values[0][0].toString()) || 0;
+            }
+        }
+
+        // Add new amount to existing value
+        const newValue = currentValue + amount;
+
+        // Update the cell
+        const updateResponse = await fetch(
+            `https://sheets.googleapis.com/v4/spreadsheets/${config.sheetId}/values/${encodeURIComponent(cellRange)}?valueInputOption=USER_ENTERED`,
+            {
+                method: 'PUT',
+                headers: {
+                    Authorization: `Bearer ${accessToken}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    values: [[newValue]],
+                }),
+            }
+        );
+
+        if (!updateResponse.ok) {
+            const error = await updateResponse.text();
+            console.error('Failed to update Google Sheet:', error);
+            return { success: false, error };
+        }
+
+        console.log(`Updated Google Sheet: ${cellRange} = ${newValue} (was ${currentValue}, added ${amount})`);
+        return { success: true };
+
+    } catch (error) {
+        console.error('Error appending to Google Sheet:', error);
+        return {
+            success: false,
+            error: error instanceof Error ? error.message : 'Unknown error'
+        };
+    }
 }
