@@ -11,7 +11,12 @@ function getSupabaseClient() {
 
     return createClient(url, key, {
         auth: { persistSession: false },
-        global: { headers: { 'Cache-Control': 'no-store' } }
+        global: {
+            headers: { 'Cache-Control': 'no-store' },
+            fetch: (url, options) => {
+                return fetch(url, { ...options, cache: 'no-store' });
+            }
+        }
     });
 }
 
