@@ -1,8 +1,8 @@
 
 'use client';
 
-import { useState } from 'react';
-import { X, Plus, Package } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { X, Plus, Package, DownloadCloud } from 'lucide-react';
 import { GlassButton, GlassCard, GlassInput } from '@/components/ui/GlassComponents';
 
 interface AddProductModalProps {
@@ -11,12 +11,65 @@ interface AddProductModalProps {
     onSuccess: () => void;
 }
 
+interface Suggestion {
+    name: string;
+    selling_price: number;
+    unit_cost: number;
+}
+
 export function AddProductModal({ isOpen, onClose, onSuccess }: AddProductModalProps) {
     const [name, setName] = useState('');
     const [sellingPrice, setSellingPrice] = useState('');
     const [unitCost, setUnitCost] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+    const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
+    const [isCustomMode, setIsCustomMode] = useState(true);
+
+    useEffect(() => {
+        if (isOpen) {
+            fetchSuggestions();
+            // Reset fields
+            setName('');
+            setSellingPrice('');
+            setUnitCost('');
+            setIsCustomMode(true);
+        }
+    }, [isOpen]);
+
+    const fetchSuggestions = async () => {
+        setIsLoadingSuggestions(true);
+        try {
+            const res = await fetch('/api/t-wake/products/suggestions');
+            const data = await res.json();
+            if (data.success) {
+                setSuggestions(data.suggestions);
+            }
+        } catch (e) {
+            console.error('Failed to fetch suggestions');
+        } finally {
+            setIsLoadingSuggestions(false);
+        }
+    };
+
+    const handleSuggestionSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const val = e.target.value;
+        if (val === 'custom') {
+            setIsCustomMode(true);
+            setName('');
+            setSellingPrice('');
+            setUnitCost('');
+        } else {
+            const selected = suggestions.find(s => s.name === val);
+            if (selected) {
+                setIsCustomMode(false);
+                setName(selected.name);
+                setSellingPrice(selected.selling_price.toString());
+                setUnitCost(selected.unit_cost.toString());
+            }
+        }
+    };
 
     if (!isOpen) return null;
 
@@ -32,17 +85,14 @@ export function AddProductModal({ isOpen, onClose, onSuccess }: AddProductModalP
                 body: JSON.stringify({
                     name,
                     selling_price: parseFloat(sellingPrice),
-                    unit_cost: parseFloat(unitCost)
+                    unit_cost: parseFloat(unitCost),
+                    skipSheetAppend: !isCustomMode // Skip append if imported from sheet
                 })
             });
 
             const result = await res.json();
 
             if (result.success) {
-                // Reset and close
-                setName('');
-                setSellingPrice('');
-                setUnitCost('');
                 onSuccess();
                 onClose();
             } else {
@@ -78,6 +128,35 @@ export function AddProductModal({ isOpen, onClose, onSuccess }: AddProductModalP
                     </div>
                 )}
 
+                <div className="mb-6">
+                    <label className="text-sm text-white/60 mb-2 block">Importer depuis Google Sheets (Optionnel)</label>
+                    <div className="relative">
+                        <select
+                            onChange={handleSuggestionSelect}
+                            className="w-full bg-white/5 border border-white/10 rounded-lg p-2 text-white/80 focus:border-purple-500/50 focus:outline-none appearance-none"
+                            defaultValue="custom"
+                            disabled={isLoadingSuggestions}
+                        >
+                            <option value="custom" className="bg-slate-800 text-white">Créer un nouveau produit</option>
+                            {suggestions.map((s, i) => (
+                                <option key={i} value={s.name} className="bg-slate-800 text-white">
+                                    {s.name}
+                                </option>
+                            ))}
+                        </select>
+                        <div className="absolute right-3 top-2.5 pointer-events-none text-white/40">
+                            {isLoadingSuggestions ? '...' : '▼'}
+                        </div>
+                    </div>
+                    {suggestions.length > 0 && (
+                        <p className="text-xs text-white/40 mt-1">
+                            {suggestions.length} produits trouvés dans le sheet mais pas dans l'app.
+                        </p>
+                    )}
+                </div>
+
+                <div className="w-full h-px bg-white/10 mb-6" />
+
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
                         <label className="text-sm text-white/60 mb-1 block">Nom du produit</label>
@@ -86,7 +165,9 @@ export function AddProductModal({ isOpen, onClose, onSuccess }: AddProductModalP
                             onChange={setName}
                             placeholder="Ex: Cake Citron"
                             required
+                            disabled={!isCustomMode}
                         />
+                        {!isCustomMode && <p className="text-xs text-white/40 mt-1">Importé du Sheet</p>}
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
@@ -128,7 +209,7 @@ export function AddProductModal({ isOpen, onClose, onSuccess }: AddProductModalP
                             className="flex-1"
                             disabled={isLoading}
                         >
-                            {isLoading ? 'Création...' : 'Créer'}
+                            {isLoading ? 'Création...' : (isCustomMode ? 'Créer & Ajouter' : 'Importer')}
                         </GlassButton>
                     </div>
                 </form>
