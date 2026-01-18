@@ -97,15 +97,26 @@ export async function GET(request: Request) {
             .lte('date', yearEnd);
 
         // Group by month for time series
+        // For January (current month), use same data as KPIs to ensure consistency
         const months = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc'];
         const timeSeriesData = months.map((name, index) => {
+            if (index === 0) {
+                // January - use the same data as KPIs
+                return {
+                    name,
+                    depenses: totalExpenses,
+                    revenus: totalIncome,
+                };
+            }
+
+            // Other months - from yearly queries (will be 0 for now)
             const monthExpenses = yearlyExpenses?.filter(e => new Date(e.date).getMonth() === index) || [];
-            const monthIncome = yearlyIncome?.filter(i => new Date(i.date).getMonth() === index) || [];
+            const monthIncomeData = yearlyIncome?.filter(i => new Date(i.date).getMonth() === index) || [];
 
             return {
                 name,
-                depenses: monthExpenses.reduce((sum, e) => sum + e.amount, 0),
-                revenus: monthIncome.reduce((sum, i) => sum + i.amount, 0),
+                depenses: monthExpenses.reduce((sum, e) => sum + Number(e.amount), 0),
+                revenus: monthIncomeData.reduce((sum, i) => sum + Number(i.amount), 0),
             };
         });
 
