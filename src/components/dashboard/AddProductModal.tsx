@@ -21,6 +21,7 @@ export function AddProductModal({ isOpen, onClose, onSuccess }: AddProductModalP
     const [name, setName] = useState('');
     const [sellingPrice, setSellingPrice] = useState('');
     const [unitCost, setUnitCost] = useState('');
+    const [initialQuantity, setInitialQuantity] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
@@ -34,6 +35,7 @@ export function AddProductModal({ isOpen, onClose, onSuccess }: AddProductModalP
             setName('');
             setSellingPrice('');
             setUnitCost('');
+            setInitialQuantity('');
             setIsCustomMode(true);
         }
     }, [isOpen]);
@@ -79,6 +81,7 @@ export function AddProductModal({ isOpen, onClose, onSuccess }: AddProductModalP
         setError(null);
 
         try {
+            // 1. Create Product
             const res = await fetch('/api/t-wake/products', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -93,6 +96,33 @@ export function AddProductModal({ isOpen, onClose, onSuccess }: AddProductModalP
             const result = await res.json();
 
             if (result.success) {
+                // 2. If quantity provided, save sale
+                if (initialQuantity && !isNaN(parseFloat(initialQuantity))) {
+                    const productId = result.product?.id;
+                    if (productId) {
+                        try {
+                            const now = new Date();
+                            // Current month 'YYYY-MM-01'
+                            const monthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+
+                            await fetch('/api/t-wake/save', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    sales: [{
+                                        productId,
+                                        month: monthStr,
+                                        quantity: parseFloat(initialQuantity)
+                                    }]
+                                })
+                            });
+                        } catch (saleErr) {
+                            console.error('Failed to save initial quantity', saleErr);
+                            // Don't fail the whole flow, user can add manually
+                        }
+                    }
+                }
+
                 onSuccess();
                 onClose();
             } else {
@@ -193,6 +223,16 @@ export function AddProductModal({ isOpen, onClose, onSuccess }: AddProductModalP
                         </div>
                     </div>
 
+                    <div>
+                        <label className="text-sm text-white/60 mb-1 block">Quantité vendue (Ce mois) - Optionnel</label>
+                        <GlassInput
+                            value={initialQuantity}
+                            onChange={setInitialQuantity}
+                            type="number"
+                            placeholder="Ex: 10"
+                        />
+                    </div>
+
                     <div className="pt-4 flex gap-3">
                         <GlassButton
                             type="button"
@@ -209,7 +249,7 @@ export function AddProductModal({ isOpen, onClose, onSuccess }: AddProductModalP
                             className="flex-1"
                             disabled={isLoading}
                         >
-                            {isLoading ? 'Création...' : (isCustomMode ? 'Créer & Ajouter' : 'Importer')}
+                            {isLoading ? 'Ajout...' : 'Ajouter'}
                         </GlassButton>
                     </div>
                 </form>
