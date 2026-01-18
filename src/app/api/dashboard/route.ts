@@ -172,6 +172,7 @@ export async function GET(request: Request) {
                     incomeCount,
                     monthStart,
                     monthEnd,
+                    monthlyExpenseIds: monthlyExpenses?.map(e => e.id) || []
                 }
             },
         });
