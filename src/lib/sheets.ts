@@ -395,23 +395,21 @@ const CATEGORY_ROW_MAP: Record<string, number> = {
 const MONTH_COLUMNS = ['B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M'];
 
 /**
- * Append expense to Google Sheet
- * Adds the amount to the appropriate cell based on category, subcategory, and month
+ * Sync expense category total to Google Sheet
+ * Calculates the TOTAL from Supabase for a category/subcategory/month and writes it
+ * Supabase is the source of truth
  */
-export async function appendExpenseToSheet(
+export async function syncCategoryToSheet(
     category: string,
     subcategory: string,
-    amount: number,
-    date: Date
-): Promise<{ success: boolean; error?: string }> {
+    month: number, // 0-11
+    year: number
+): Promise<{ success: boolean; error?: string; total?: number }> {
     try {
         const config = getSheetsConfig();
         if (!config) {
             return { success: false, error: 'Google Sheets not configured' };
         }
-
-        const monthIndex = date.getMonth(); // 0-11
-        const column = MONTH_COLUMNS[monthIndex];
 
         const key = `${category}/${subcategory}`;
         const row = CATEGORY_ROW_MAP[key];
@@ -421,32 +419,42 @@ export async function appendExpenseToSheet(
             return { success: true }; // Not an error, just no mapping
         }
 
+        const column = MONTH_COLUMNS[month];
         const cellRange = `Budget!${column}${row}`;
 
-        // First, get current value
-        const accessToken = await getAccessToken(config);
+        // Calculate total from Supabase for this category/subcategory/month
+        const monthStart = `${year}-${String(month + 1).padStart(2, '0')}-01`;
+        const nextMonth = month === 11 ? `${year + 1}-01-01` : `${year}-${String(month + 2).padStart(2, '0')}-01`;
 
-        const getResponse = await fetch(
-            `https://sheets.googleapis.com/v4/spreadsheets/${config.sheetId}/values/${encodeURIComponent(cellRange)}`,
-            {
-                headers: {
-                    Authorization: `Bearer ${accessToken}`,
-                },
-            }
-        );
+        // Fetch from Supabase
+        const { createClient } = await import('@supabase/supabase-js');
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+        const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-        let currentValue = 0;
-        if (getResponse.ok) {
-            const getData = await getResponse.json();
-            if (getData.values && getData.values[0] && getData.values[0][0]) {
-                currentValue = parseFrenchNumber(getData.values[0][0].toString()) || 0;
-            }
+        if (!supabaseUrl || !supabaseKey) {
+            return { success: false, error: 'Supabase not configured' };
         }
 
-        // Add new amount to existing value
-        const newValue = currentValue + amount;
+        const supabase = createClient(supabaseUrl, supabaseKey);
 
-        // Update the cell
+        const { data: expenses, error: dbError } = await supabase
+            .from('expenses')
+            .select('amount')
+            .eq('category', category)
+            .eq('subcategory', subcategory)
+            .gte('date', monthStart)
+            .lt('date', nextMonth);
+
+        if (dbError) {
+            return { success: false, error: dbError.message };
+        }
+
+        // Calculate total
+        const total = expenses?.reduce((sum, e) => sum + Number(e.amount), 0) || 0;
+
+        // Update the cell with the exact total (not adding)
+        const accessToken = await getAccessToken(config);
+
         const updateResponse = await fetch(
             `https://sheets.googleapis.com/v4/spreadsheets/${config.sheetId}/values/${encodeURIComponent(cellRange)}?valueInputOption=USER_ENTERED`,
             {
@@ -456,7 +464,7 @@ export async function appendExpenseToSheet(
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    values: [[newValue]],
+                    values: [[total]],
                 }),
             }
         );
@@ -467,14 +475,33 @@ export async function appendExpenseToSheet(
             return { success: false, error };
         }
 
-        console.log(`Updated Google Sheet: ${cellRange} = ${newValue} (was ${currentValue}, added ${amount})`);
-        return { success: true };
+        console.log(`Synced to Google Sheet: ${cellRange} = ${total} (from ${expenses?.length || 0} expenses)`);
+        return { success: true, total };
 
     } catch (error) {
-        console.error('Error appending to Google Sheet:', error);
+        console.error('Error syncing to Google Sheet:', error);
         return {
             success: false,
             error: error instanceof Error ? error.message : 'Unknown error'
         };
     }
 }
+
+/**
+ * Legacy function - now calls syncCategoryToSheet
+ */
+export async function appendExpenseToSheet(
+    category: string,
+    subcategory: string,
+    amount: number,
+    date: Date
+): Promise<{ success: boolean; error?: string }> {
+    // Use the new sync function that calculates total from Supabase
+    return syncCategoryToSheet(
+        category,
+        subcategory,
+        date.getMonth(),
+        date.getFullYear()
+    );
+}
+

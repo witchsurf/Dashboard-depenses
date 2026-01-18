@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { appendExpenseToSheet } from '@/lib/sheets';
+import { syncCategoryToSheet } from '@/lib/sheets';
 
 export const dynamic = 'force-dynamic';
 
 /**
  * POST /api/sync-to-sheets - Sync all Supabase expenses to Google Sheets
- * This is a one-time migration endpoint
+ * Writes exact totals from Supabase (source of truth)
  */
 export async function POST() {
     try {
@@ -22,13 +22,12 @@ export async function POST() {
 
         const supabase = createClient(url, key);
 
-        // Get all expenses from January 2026
+        // Get distinct category/subcategory combinations for January 2026
         const { data: expenses, error } = await supabase
             .from('expenses')
-            .select('*')
+            .select('category, subcategory')
             .gte('date', '2026-01-01')
-            .lt('date', '2026-02-01')
-            .order('date', { ascending: true });
+            .lt('date', '2026-02-01');
 
         if (error) {
             return NextResponse.json({
@@ -37,40 +36,51 @@ export async function POST() {
             }, { status: 500 });
         }
 
+        // Get unique category/subcategory combinations
+        const uniqueCombos = new Set<string>();
+        expenses?.forEach(e => {
+            uniqueCombos.add(`${e.category}|${e.subcategory || ''}`);
+        });
+
         const results = {
-            total: expenses?.length || 0,
+            total: uniqueCombos.size,
             synced: 0,
             skipped: 0,
+            details: [] as { category: string; subcategory: string; total: number }[],
             errors: [] as string[],
         };
 
-        // Sync each expense to Google Sheets
-        for (const expense of expenses || []) {
+        // Sync each unique category/subcategory to Google Sheets
+        for (const combo of Array.from(uniqueCombos)) {
+            const [category, subcategory] = combo.split('|');
             try {
-                const result = await appendExpenseToSheet(
-                    expense.category,
-                    expense.subcategory || '',
-                    expense.amount,
-                    new Date(expense.date)
+                const result = await syncCategoryToSheet(
+                    category,
+                    subcategory,
+                    0, // January = month 0
+                    2026
                 );
 
                 if (result.success) {
                     results.synced++;
+                    if (result.total !== undefined) {
+                        results.details.push({ category, subcategory, total: result.total });
+                    }
                 } else {
                     results.skipped++;
                     if (result.error) {
-                        results.errors.push(`${expense.category}/${expense.subcategory}: ${result.error}`);
+                        results.errors.push(`${category}/${subcategory}: ${result.error}`);
                     }
                 }
             } catch (err) {
                 results.skipped++;
-                results.errors.push(`${expense.category}/${expense.subcategory}: ${err instanceof Error ? err.message : 'Unknown error'}`);
+                results.errors.push(`${category}/${subcategory}: ${err instanceof Error ? err.message : 'Unknown error'}`);
             }
         }
 
         return NextResponse.json({
             success: true,
-            message: `Sync completed: ${results.synced}/${results.total} expenses synced`,
+            message: `Sync completed: ${results.synced}/${results.total} categories synced`,
             results,
         });
 
@@ -89,6 +99,6 @@ export async function POST() {
 export async function GET() {
     return NextResponse.json({
         info: 'POST to this endpoint to sync all January 2026 expenses from Supabase to Google Sheets',
-        warning: 'This will ADD amounts to existing values in Google Sheets - run only once!',
+        note: 'This writes EXACT TOTALS from Supabase (source of truth) - safe to run multiple times',
     });
 }
