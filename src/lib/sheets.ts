@@ -443,16 +443,30 @@ export async function syncCategoryToSheet(
             .eq('category', category)
             .eq('subcategory', subcategory)
             .gte('date', monthStart)
-            .lt('date', nextMonth);
+            .lt('date', nextMonth)
+            .order('created_at', { ascending: true });
 
         if (dbError) {
             return { success: false, error: dbError.message };
         }
 
-        // Calculate total
-        const total = expenses?.reduce((sum, e) => sum + Number(e.amount), 0) || 0;
+        // Build formula with breakdown for audit trail
+        // e.g. "=1500+500+3000" which displays as 5000 but shows the operations
+        let cellValue: string | number;
+        const amounts = expenses?.map(e => Number(e.amount)) || [];
 
-        // Update the cell with the exact total (not adding)
+        if (amounts.length === 0) {
+            cellValue = 0;
+        } else if (amounts.length === 1) {
+            cellValue = amounts[0];
+        } else {
+            // Create formula like "=1500+500+3000"
+            cellValue = '=' + amounts.join('+');
+        }
+
+        const total = amounts.reduce((sum, a) => sum + a, 0);
+
+        // Update the cell with formula or value
         const accessToken = await getAccessToken(config);
 
         const updateResponse = await fetch(
@@ -464,7 +478,7 @@ export async function syncCategoryToSheet(
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    values: [[total]],
+                    values: [[cellValue]],
                 }),
             }
         );
