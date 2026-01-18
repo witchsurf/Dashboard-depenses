@@ -258,7 +258,7 @@ export async function GET(request: Request) {
                 },
                 {
                     label: 'Transactions',
-                    value: (monthlyExpenses?.length || 0) + (monthlyIncome?.length || 0) + (tWakeTxs?.filter((t: any) => !t.description?.includes('Import Initial')).length || 0),
+                    value: (monthlyExpenses?.length || 0) + (monthlyIncome?.length || 0) + (tWakeTxs?.filter((t: any) => t.date !== '2026-01-01').length || 0),
                     format: 'number',
                     trend: 'stable',
                     color: '#8B5CF6',
@@ -276,7 +276,7 @@ export async function GET(request: Request) {
                     expenseCount,
                     incomeCount,
                     tWakeTotal: tWakeTxs?.length || 0,
-                    tWakeFiltered: tWakeTxs?.filter((t: any) => !t.description?.includes('Import Initial')).length || 0,
+                    tWakeDateFiltered: tWakeTxs?.filter((t: any) => t.date !== '2026-01-01').length || 0,
                     monthStart,
                     monthEnd,
                     monthlyExpenseIds: monthlyExpenses?.map(e => e.id) || []
