@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server';
 import { fetchData, getDataSourceConfig, getDataSourceMode } from '@/lib/data-fetcher';
 import { inferColumnTypes, detectBudgetStructure } from '@/lib/schema';
 
-export const revalidate = 300; // Revalidate every 5 minutes
+export const dynamic = 'force-dynamic';
+export const revalidate = 0; // Disable caching for sheets API
 
 export async function GET(request: Request) {
     try {
