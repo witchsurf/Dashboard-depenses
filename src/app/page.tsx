@@ -32,6 +32,7 @@ interface DashboardData {
         amount: number;
         category: string;
         description?: string;
+        type?: 'income' | 'expense';
     }>;
     config: {
         mode: string;
@@ -193,7 +194,7 @@ export default function DashboardPage() {
                                 {/* Recent transactions */}
                                 {data.recentTransactions.length > 0 && (
                                     <GlassCard>
-                                        <h3 className="text-lg font-semibold mb-4">Dernières dépenses</h3>
+                                        <h3 className="text-lg font-semibold mb-4">Dernières transactions</h3>
                                         <div className="space-y-2">
                                             {data.recentTransactions.slice(0, 5).map((tx) => (
                                                 <div
@@ -207,8 +208,8 @@ export default function DashboardPage() {
                                                             {tx.description && ` — ${tx.description}`}
                                                         </p>
                                                     </div>
-                                                    <p className="font-semibold text-red-400">
-                                                        -{formatCurrency(tx.amount)}
+                                                    <p className={`font-semibold ${tx.type === 'income' ? 'text-emerald-400' : 'text-red-400'}`}>
+                                                        {tx.type === 'income' ? '+' : '-'}{formatCurrency(tx.amount)}
                                                     </p>
                                                 </div>
                                             ))}

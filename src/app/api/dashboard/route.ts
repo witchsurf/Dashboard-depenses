@@ -161,12 +161,29 @@ export async function GET(request: Request) {
             };
         });
 
-        // Get recent transactions (ordered by created_at to show newest first)
+        // Get recent transactions (Expenses + Income)
         const { data: recentExpenses } = await supabase
             .from('expenses')
             .select('*')
             .order('created_at', { ascending: false })
             .limit(10);
+
+        const { data: recentIncome } = await supabase
+            .from('income')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .limit(10);
+
+        // Merge and Sort
+        const mixedTransactions = [
+            ...(recentExpenses?.map(e => ({ ...e, type: 'expense' })) || []),
+            ...(recentIncome?.map(i => ({
+                ...i,
+                type: 'income',
+                category: i.source // Map source to category for display uniformity
+            })) || [])
+        ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+            .slice(0, 10);
 
         return NextResponse.json({
             success: true,
@@ -202,7 +219,7 @@ export async function GET(request: Request) {
             ],
             categoryData,
             timeSeriesData,
-            recentTransactions: recentExpenses || [],
+            recentTransactions: mixedTransactions,
             config: {
                 mode: 'supabase',
                 isConnected: true,
