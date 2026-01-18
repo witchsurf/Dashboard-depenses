@@ -186,6 +186,7 @@ export async function GET(request: Request) {
         const { data: recentIncome } = await supabase
             .from('income')
             .select('*')
+            .neq('source', 'T-wake/LP') // Exclude legacy static entry to avoid duplication in list
             .order('created_at', { ascending: false })
             .limit(50);
 
