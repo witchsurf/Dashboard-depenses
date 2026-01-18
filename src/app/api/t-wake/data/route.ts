@@ -23,7 +23,7 @@ export async function GET() {
         const { data: products, error: prodError } = await supabase
             .from('t_wake_products')
             .select('*')
-            .order('name');
+            .select('*');
 
         if (prodError) throw prodError;
 
