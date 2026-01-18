@@ -93,13 +93,23 @@ export async function GET(request: Request) {
 
         // Calculate KPIs
         const totalExpenses = monthlyExpenses?.reduce((sum, e) => sum + Number(e.amount), 0) || 0;
-        let baseIncome = monthlyIncome?.reduce((sum, i) => sum + Number(i.amount), 0) || 0;
-        const totalIncome = baseIncome + tWakeProfit; // Add T-WAKE profit
+
+        // Filter out existing static T-WAKE entries to avoid double counting
+        // Known duplicat source: 'T-wake/LP'
+        const baseIncome = monthlyIncome?.reduce((sum, i) => {
+            if (i.source === 'T-wake/LP') return sum; // Skip static import
+            return sum + Number(i.amount);
+        }, 0) || 0;
+
+        const totalIncome = baseIncome + tWakeProfit; // Add dynamic T-WAKE profit
         const netBalance = totalIncome - totalExpenses;
 
         // Debug - count items
         const expenseCount = monthlyExpenses?.length || 0;
-        const incomeCount = monthlyIncome?.length || 0;
+        const incomeCount = monthlyIncome?.reduce((count, i) => {
+            if (i.source === 'T-wake/LP') return count;
+            return count + 1;
+        }, 0) || 0;
 
         // Group expenses by category
         const expensesByCategory: Record<string, number> = {};
