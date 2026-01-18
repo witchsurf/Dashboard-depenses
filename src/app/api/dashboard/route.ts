@@ -185,16 +185,41 @@ export async function GET(request: Request) {
             .order('created_at', { ascending: false })
             .limit(50);
 
+        // Fetch recent T-WAKE sales for transaction list
+        const { data: recentTWake } = await supabase
+            .from('t_wake_transactions')
+            .select(`
+                *,
+                product:t_wake_products (name, selling_price, unit_cost)
+            `)
+            .order('created_at', { ascending: false })
+            .limit(50);
+
         // Merge and Sort
         const mixedTransactions = [
             ...(recentExpenses?.map(e => ({ ...e, type: 'expense' })) || []),
             ...(recentIncome?.map(i => ({
                 ...i,
                 type: 'income',
-                category: i.source // Map source to category for display uniformity
-            })) || [])
+                category: i.source // Map source to category
+            })) || []),
+            ...(recentTWake?.map((t: any) => {
+                // Calculate margin for "Amount" to match revenue logic
+                const margin = t.product ? (t.product.selling_price - t.product.unit_cost) * t.quantity : 0;
+                return {
+                    id: t.id,
+                    date: t.date,
+                    amount: margin,
+                    category: 'Vente T-WAKE',
+                    description: `${t.product?.name || 'Produit'} (x${t.quantity})`,
+                    created_at: t.created_at,
+                    type: 'income'
+                };
+            }) || [])
         ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
             .slice(0, 10);
+
+
 
         return NextResponse.json({
             success: true,
