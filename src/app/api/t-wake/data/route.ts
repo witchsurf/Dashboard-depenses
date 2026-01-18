@@ -31,7 +31,7 @@ export async function GET() {
         // Optimally we would filter by year, but for now fetch all
         const { data: transactions, error: transError } = await supabase
             .from('t_wake_transactions')
-            .select('product_id, date, quantity');
+            .select('*');
 
         if (transError) throw transError;
 

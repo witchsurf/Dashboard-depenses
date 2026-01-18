@@ -99,18 +99,26 @@ export async function POST() {
                 if (!val || val === '') continue; // Skip empty cells
 
                 const qty = parseFrenchNumber(val);
-                if (qty === 0) continue; // Skip 0? Maybe keep 0 if it was explicit, but empty is usually skip.
+                if (qty === 0) continue;
 
                 // Construct date: 2026-01-01, 2026-02-01 etc.
                 const monthDate = `${year}-${String(monthIdx + 1).padStart(2, '0')}-01`;
 
+                // DELETE existing transaction for this product/month to avoid duplicates (Simulating upsert)
+                await supabase.from('t_wake_transactions')
+                    .delete()
+                    .eq('product_id', product.id)
+                    .eq('date', monthDate)
+                    .eq('description', 'Import Initial');
+
                 const { error: salesError } = await supabase
-                    .from('t_wake_sales')
-                    .upsert({
+                    .from('t_wake_transactions')
+                    .insert({
                         product_id: product.id,
-                        month: monthDate,
-                        quantity: qty
-                    }, { onConflict: 'product_id, month' });
+                        date: monthDate,
+                        quantity: qty,
+                        description: 'Import Initial'
+                    });
 
                 if (salesError) {
                     stats.errors.push(`Sales ${name} ${monthDate}: ${salesError.message}`);
