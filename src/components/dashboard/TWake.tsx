@@ -2,10 +2,11 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { RefreshCw, Save, UploadCloud, AlertCircle, CheckCircle2, Plus } from 'lucide-react';
+import { RefreshCw, Save, UploadCloud, AlertCircle, CheckCircle2, Plus, Calendar, TrendingUp } from 'lucide-react';
 import { GlassCard, GlassButton } from '@/components/ui/GlassComponents';
 import { formatCurrency } from '@/lib/utils';
 import { AddProductModal } from './AddProductModal';
+import { AddSaleModal } from './AddSaleModal';
 
 interface Product {
     id: string;
@@ -31,8 +32,16 @@ export function TWake({ onSync }: TWakeProps) {
     const [isSaving, setIsSaving] = useState(false);
     const [isSyncing, setIsSyncing] = useState(false);
     const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+    const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
     const [showAddProduct, setShowAddProduct] = useState(false);
+    const [showAddSale, setShowAddSale] = useState(false);
+    const [stats, setStats] = useState({
+        today: { revenue: 0, profit: 0, count: 0 },
+        week: { revenue: 0, profit: 0, count: 0 },
+        month: { revenue: 0, profit: 0, count: 0 },
+        year: { revenue: 0, profit: 0, count: 0 }
+    });
 
     // Load data
     const loadData = useCallback(async () => {
@@ -57,6 +66,14 @@ export function TWake({ onSync }: TWakeProps) {
             } else {
                 setMessage({ type: 'error', text: data.error });
             }
+
+            // Load Stats
+            const statsRes = await fetch('/api/t-wake/stats');
+            const statsData = await statsRes.json();
+            if (statsData.success) {
+                setStats(statsData.stats);
+            }
+
         } catch (e) {
             setMessage({ type: 'error', text: 'Erreur de chargement' });
         } finally {
@@ -170,13 +187,23 @@ export function TWake({ onSync }: TWakeProps) {
 
                     <div className="flex gap-2">
                         <GlassButton
-                            onClick={() => setShowAddProduct(true)}
+                            onClick={() => setShowAddSale(true)}
                             variant="primary"
+                            className="mr-2 bg-emerald-500/80 hover:bg-emerald-500"
+                        >
+                            <div className="flex items-center gap-2">
+                                <Plus className="w-4 h-4" />
+                                <span className="hidden sm:inline">Vente</span>
+                            </div>
+                        </GlassButton>
+                        <GlassButton
+                            onClick={() => setShowAddProduct(true)}
+                            variant="secondary"
                             className="mr-2"
                         >
                             <div className="flex items-center gap-2">
                                 <Plus className="w-4 h-4" />
-                                <span className="hidden sm:inline">Ajouter</span>
+                                <span className="hidden sm:inline">Produit</span>
                             </div>
                         </GlassButton>
                         <GlassButton
@@ -211,14 +238,41 @@ export function TWake({ onSync }: TWakeProps) {
                 )}
 
                 {/* KPI Review */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-                    <div className="glass p-4 rounded-xl bg-gradient-to-br from-emerald-500/10 to-teal-500/10">
-                        <p className="text-sm text-emerald-300">Chiffre d'Affaires Annuel</p>
-                        <p className="text-2xl font-bold text-white">{formatCurrency(totals.ca)}</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                    <div className="glass p-4 rounded-xl bg-gradient-to-br from-blue-500/10 to-indigo-500/10">
+                        <div className="flex justify-between items-start mb-2">
+                            <p className="text-sm text-blue-300">Aujourd'hui</p>
+                            <span className="text-xs bg-blue-500/20 text-blue-200 px-2 py-0.5 rounded-full">{stats.today.count} exp.</span>
+                        </div>
+                        <p className="text-2xl font-bold text-white">{formatCurrency(stats.today.revenue)}</p>
+                        <p className="text-xs text-blue-300/60 mt-1">Marge: {formatCurrency(stats.today.profit)}</p>
                     </div>
+
                     <div className="glass p-4 rounded-xl bg-gradient-to-br from-purple-500/10 to-pink-500/10">
-                        <p className="text-sm text-purple-300">Bénéfice Annuel</p>
-                        <p className="text-2xl font-bold text-white">{formatCurrency(totals.profit)}</p>
+                        <div className="flex justify-between items-start mb-2">
+                            <p className="text-sm text-purple-300">Cette Semaine</p>
+                            <span className="text-xs bg-purple-500/20 text-purple-200 px-2 py-0.5 rounded-full">{stats.week.count} exp.</span>
+                        </div>
+                        <p className="text-2xl font-bold text-white">{formatCurrency(stats.week.revenue)}</p>
+                        <p className="text-xs text-purple-300/60 mt-1">Marge: {formatCurrency(stats.week.profit)}</p>
+                    </div>
+
+                    <div className="glass p-4 rounded-xl bg-gradient-to-br from-emerald-500/10 to-teal-500/10">
+                        <div className="flex justify-between items-start mb-2">
+                            <p className="text-sm text-emerald-300">Ce Mois</p>
+                            <span className="text-xs bg-emerald-500/20 text-emerald-200 px-2 py-0.5 rounded-full">{stats.month.count} exp.</span>
+                        </div>
+                        <p className="text-2xl font-bold text-white">{formatCurrency(stats.month.revenue)}</p>
+                        <p className="text-xs text-emerald-300/60 mt-1">Marge: {formatCurrency(stats.month.profit)}</p>
+                    </div>
+
+                    <div className="glass p-4 rounded-xl bg-gradient-to-br from-orange-500/10 to-red-500/10">
+                        <div className="flex justify-between items-start mb-2">
+                            <p className="text-sm text-orange-300">Cette Année</p>
+                            <span className="text-xs bg-orange-500/20 text-orange-200 px-2 py-0.5 rounded-full">{stats.year.count} exp.</span>
+                        </div>
+                        <p className="text-2xl font-bold text-white">{formatCurrency(stats.year.revenue)}</p>
+                        <p className="text-xs text-orange-300/60 mt-1">Marge: {formatCurrency(stats.year.profit)}</p>
                     </div>
                 </div>
 
@@ -278,6 +332,16 @@ export function TWake({ onSync }: TWakeProps) {
                 onSuccess={() => {
                     loadData();
                     setMessage({ type: 'success', text: 'Produit ajouté avec succès' });
+                }}
+            />
+
+            <AddSaleModal
+                isOpen={showAddSale}
+                onClose={() => setShowAddSale(false)}
+                products={products}
+                onSuccess={() => {
+                    loadData();
+                    setMessage({ type: 'success', text: 'Vente enregistrée avec succès' });
                 }}
             />
         </div>

@@ -4,142 +4,104 @@ import { createClient } from '@supabase/supabase-js';
 import { getSheetsConfig, getAccessToken } from '@/lib/sheets';
 
 export const dynamic = 'force-dynamic';
-export const maxDuration = 60; // Allow longer timeout for sync
+export const maxDuration = 60; // 1 minute max
 
 function getSupabaseClient() {
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-    if (!url || !key) return null;
-    return createClient(url, key);
+    return createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
 }
 
-/**
- * POST /api/t-wake/sync
- * Syncs Supabase sales data TO Google Sheets
- */
 export async function POST() {
     try {
         const supabase = getSupabaseClient();
-        if (!supabase) return NextResponse.json({ success: false, error: 'Supabase missing' });
-
         const config = getSheetsConfig();
-        if (!config) return NextResponse.json({ success: false, error: 'Sheets config missing' });
-
+        if (!config) return NextResponse.json({ success: false, error: 'Config missing' });
         const accessToken = await getAccessToken(config);
 
-        // 1. Fetch all sales from Supabase
-        const { data: sales, error: salesError } = await supabase
-            .from('t_wake_sales')
-            .select(`
-                quantity,
-                month,
-                product:t_wake_products (name)
-            `);
+        // 1. Fetch Aggregated Data from Transactions
+        const { data: transactions, error: transError } = await supabase
+            .from('t_wake_transactions')
+            .select('product_id, date, quantity, product:t_wake_products(name)');
 
-        if (salesError) throw salesError;
+        if (transError) throw transError;
 
-        // Group sales by Product Name and Month Index (0-11)
         // Map<ProductName, Map<MonthIndex, Quantity>>
+        // MonthIndex: 0-11 for 2026 (assumed)
+        const budgetYear = 2026;
         const salesMap = new Map<string, Map<number, number>>();
 
-        sales.forEach((s: any) => {
-            const prodName = s.product?.name;
+        transactions?.forEach((t: any) => {
+            const prodName = t.product?.name;
             if (!prodName) return;
+
+            const d = new Date(t.date);
+            if (d.getFullYear() !== budgetYear) return; // Only sync current year
 
             if (!salesMap.has(prodName)) {
                 salesMap.set(prodName, new Map());
             }
 
-            const monthDate = new Date(s.month);
-            const monthIdx = monthDate.getMonth(); // 0-11
-
-            salesMap.get(prodName)?.set(monthIdx, Number(s.quantity));
+            const monthIdx = d.getMonth(); // 0-11
+            const current = salesMap.get(prodName)?.get(monthIdx) || 0;
+            salesMap.get(prodName)?.set(monthIdx, current + Number(t.quantity));
         });
 
-        // 2. Read Sheet to find Row indices for products
+        // 2. Read Sheet Rows to find mapping
         const sheetName = 'Cakes/Biscuits';
-        const range = `'${sheetName}'!A3:A100`; // Read names only
-
-        const readResponse = await fetch(
+        const range = `'${sheetName}'!A3:A100`; // Just names
+        const res = await fetch(
             `https://sheets.googleapis.com/v4/spreadsheets/${config.sheetId}/values/${encodeURIComponent(range)}`,
             { headers: { Authorization: `Bearer ${accessToken}` } }
         );
-
-        const readData = await readResponse.json();
-        const rows = readData.values || [];
+        const sheetData = await res.json();
+        const rows = sheetData.values || [];
 
         // 3. Prepare Batch Update
-        const dataToUpdate = [];
+        const updates: any[] = [];
+        const monthStartColIndex = 4; // Col E is index 4 (Jan)
 
-        // Iterate rows in sheet
-        for (let i = 0; i < rows.length; i++) {
-            const rowVerify = rows[i];
-            const name = rowVerify[0];
-            if (!name) continue;
+        rows.forEach((row: any, i: number) => {
+            const name = row[0];
+            if (!name) return;
 
             const productSales = salesMap.get(name);
-            if (!productSales) continue;
+            if (productSales) {
+                const sheetRowIndex = 3 + i; // Data starts at A3 -> index 0 corresponds to row 3
+                // Row is 1-based, index is 0-based. But API uses A1 or R1C1.
+                // Range `'Sheet'!E{Row}:P{Row}`
 
-            const rowIndex = 3 + i; // Data starts at row 3 (1-based index for API)
-            // But API uses row index 0-based? No, A1 notation uses 1-based.
-            // Wait, batchUpdate usually uses userEnteredValue which can accept range.
+                const rowValues = [];
+                for (let m = 0; m < 12; m++) {
+                    const qty = productSales.get(m) || 0;
+                    rowValues.push(qty === 0 ? '' : qty);
+                }
 
-            // We'll update the whole row of months (Jan-Dec are cols E-P)
-            // Range: E{rowIndex}:P{rowIndex}
-
-            const monthValues = [];
-            for (let m = 0; m < 12; m++) {
-                const qty = productSales.get(m);
-                monthValues.push(qty !== undefined ? qty : null);
-                // Keep null/empty if no data to avoid overwriting with 0 if needed, 
-                // but usually syncing implies overwriting. Let's write the number or empty string.
+                updates.push({
+                    range: `'${sheetName}'!E${sheetRowIndex}:P${sheetRowIndex}`,
+                    values: [rowValues]
+                });
             }
-
-            // Construct values for API: E is index 4
-            // Range string
-            const updateRange = `'${sheetName}'!E${rowIndex}:P${rowIndex}`;
-
-            dataToUpdate.push({
-                range: updateRange,
-                values: [monthValues]
-            });
-        }
-
-        if (dataToUpdate.length === 0) {
-            return NextResponse.json({ success: true, message: 'No updates needed' });
-        }
-
-        // Execute Batch Update
-        const batchResponse = await fetch(
-            `https://sheets.googleapis.com/v4/spreadsheets/${config.sheetId}/values:batchUpdate`,
-            {
-                method: 'POST',
-                headers: {
-                    Authorization: `Bearer ${accessToken}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    valueInputOption: 'USER_ENTERED',
-                    data: dataToUpdate
-                })
-            }
-        );
-
-        if (!batchResponse.ok) {
-            const err = await batchResponse.text();
-            throw new Error(`Sheets API error: ${err}`);
-        }
-
-        return NextResponse.json({
-            success: true,
-            updatedRows: dataToUpdate.length
         });
 
+        if (updates.length > 0) {
+            await fetch(
+                `https://sheets.googleapis.com/v4/spreadsheets/${config.sheetId}/values:batchUpdate`,
+                {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+                    body: JSON.stringify({
+                        valueInputOption: 'USER_ENTERED',
+                        data: updates
+                    })
+                }
+            );
+        }
+
+        return NextResponse.json({ success: true, updatedRows: updates.length });
+
     } catch (error) {
-        console.error('Sync error:', error);
-        return NextResponse.json({
-            success: false,
-            error: error instanceof Error ? error.message : 'Unknown error'
-        }, { status: 500 });
+        return NextResponse.json({ success: false, error: 'Sync failed' }, { status: 500 });
     }
 }

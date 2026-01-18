@@ -3,27 +3,17 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
 export const dynamic = 'force-dynamic';
-export const revalidate = 0;
 
 function getSupabaseClient() {
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-    if (!url || !key) return null;
-    return createClient(url, key, {
-        global: { headers: { 'Cache-Control': 'no-store' } }
-    });
+    return createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
 }
 
-/**
- * GET /api/t-wake/data
- * Returns products and their sales
- */
 export async function GET() {
     try {
         const supabase = getSupabaseClient();
-        if (!supabase) {
-            return NextResponse.json({ success: false, error: 'Supabase not configured' }, { status: 500 });
-        }
 
         // Fetch products
         const { data: products, error: prodError } = await supabase
@@ -33,18 +23,33 @@ export async function GET() {
 
         if (prodError) throw prodError;
 
-        // Fetch sales
-        const { data: sales, error: salesError } = await supabase
-            .from('t_wake_sales')
-            .select('*');
+        // Fetch transactions (aggregated in JS)
+        // Optimally we would filter by year, but for now fetch all
+        const { data: transactions, error: transError } = await supabase
+            .from('t_wake_transactions')
+            .select('product_id, date, quantity');
 
-        if (salesError) throw salesError;
+        if (transError) throw transError;
 
-        return NextResponse.json({
-            success: true,
-            products: products || [],
-            sales: sales || []
+        // Aggregate into sales [{ product_id, month, quantity }]
+        // Month format: YYYY-MM-01
+
+        const aggregation = new Map<string, number>(); // Key: "productId|YYYY-MM-01" -> Qty
+
+        transactions?.forEach((t: any) => {
+            if (!t.date) return;
+            const dateObj = new Date(t.date);
+            const key = `${t.product_id}|${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-01`;
+            const current = aggregation.get(key) || 0;
+            aggregation.set(key, current + Number(t.quantity));
         });
+
+        const sales = Array.from(aggregation.entries()).map(([key, quantity]) => {
+            const [product_id, month] = key.split('|');
+            return { product_id, month, quantity };
+        });
+
+        return NextResponse.json({ success: true, products, sales });
 
     } catch (error) {
         return NextResponse.json({

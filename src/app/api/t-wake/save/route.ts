@@ -5,48 +5,87 @@ import { createClient } from '@supabase/supabase-js';
 export const dynamic = 'force-dynamic';
 
 function getSupabaseClient() {
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-    if (!url || !key) return null;
-    return createClient(url, key);
+    return createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
 }
 
-/**
- * POST /api/t-wake/save
- * Save sales data
- * body: { sales: [{ productId, month, quantity }] }
- */
+// POST: Save sales corrections from Grid
 export async function POST(request: Request) {
     try {
         const body = await request.json();
-        const { sales } = body;
+        const { sales } = body; // Array of { productId, month (YYYY-MM-01), quantity } (The NEW total)
 
-        if (!Array.isArray(sales)) {
-            return NextResponse.json({ success: false, error: 'Invalid data format' }, { status: 400 });
+        if (!sales || !Array.isArray(sales)) {
+            return NextResponse.json({ success: false, error: 'Invalid data' }, { status: 400 });
         }
 
         const supabase = getSupabaseClient();
-        if (!supabase) {
-            return NextResponse.json({ success: false, error: 'Supabase not configured' }, { status: 500 });
+
+        // We need to calculate the difference to insert adjustment transactions.
+        // 1. Fetch current totals for specific products/months involved?
+        // Or just trust the frontend? Frontend might not know the exact "old" value if checking against race conditions, but let's assume frontend logic:
+        // Actually, the Grid sends the target Quantity.
+        // Backend must fetch current total to calc diff.
+
+        // Optimization: Fetch all transactions for these products/months?
+        // Let's loop (not efficient but safe for small batches).
+
+        const errors: string[] = [];
+        let savedCount = 0;
+
+        for (const sale of sales) {
+            const { productId, month, quantity } = sale;
+            if (!productId || !month) continue;
+
+            const targetQty = Number(quantity);
+
+            // Fetch current total for this product/month
+            // month is 'YYYY-MM-01'. Range is that month.
+            const startDate = month;
+            const d = new Date(month);
+            const endDate = new Date(d.getFullYear(), d.getMonth() + 1, 0).toISOString().split('T')[0]; // End of month
+
+            const { data: trans, error: fetchError } = await supabase
+                .from('t_wake_transactions')
+                .select('quantity')
+                .eq('product_id', productId)
+                .gte('date', startDate)
+                .lte('date', endDate);
+
+            if (fetchError) {
+                errors.push(`Fetch error ${productId}: ${fetchError.message}`);
+                continue;
+            }
+
+            const currentTotal = trans?.reduce((sum, t) => sum + Number(t.quantity), 0) || 0;
+            const diff = targetQty - currentTotal;
+
+            if (diff !== 0) {
+                // Insert adjustment transaction
+                const { error: insertError } = await supabase
+                    .from('t_wake_transactions')
+                    .insert({
+                        product_id: productId,
+                        date: startDate, // First of month for adjustments
+                        quantity: diff,
+                        description: 'Grid Manual Adjustment'
+                    });
+
+                if (insertError) {
+                    errors.push(`Update error ${productId}: ${insertError.message}`);
+                } else {
+                    savedCount++;
+                }
+            }
         }
 
-        const { error } = await supabase
-            .from('t_wake_sales')
-            .upsert(
-                sales.map(s => ({
-                    product_id: s.productId,
-                    month: s.month, // 'YYYY-MM-01'
-                    quantity: s.quantity,
-                    last_updated: new Date().toISOString()
-                })),
-                { onConflict: 'product_id, month' }
-            );
-
-        if (error) {
-            return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+        if (errors.length > 0) {
+            return NextResponse.json({ success: false, error: errors.join(', ') });
         }
 
-        return NextResponse.json({ success: true });
+        return NextResponse.json({ success: true, saved: savedCount });
 
     } catch (error) {
         return NextResponse.json({
