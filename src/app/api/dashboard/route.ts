@@ -64,11 +64,37 @@ export async function GET(request: Request) {
             console.error('Income query error:', incomeError);
         }
 
+        // --- NEW: Calculate T-WAKE Profit for Current Month ---
+        let tWakeProfit = 0;
+        try {
+            const { data: tWakeTxs, error: tWakeError } = await supabase
+                .from('t_wake_transactions')
+                .select(`
+                    quantity,
+                    product:t_wake_products (selling_price, unit_cost)
+                `)
+                .gte('date', '2026-01-01')
+                .lt('date', '2026-02-01');
+
+            if (!tWakeError && tWakeTxs) {
+                tWakeProfit = tWakeTxs.reduce((sum, t: any) => {
+                    if (!t.product) return sum;
+                    const margin = t.product.selling_price - t.product.unit_cost;
+                    return sum + (Number(t.quantity) * margin);
+                }, 0);
+                console.log('T-WAKE Profit added to Revenue:', tWakeProfit);
+            }
+        } catch (twError) {
+            console.error('Failed to fetch T-WAKE stats for dashboard', twError);
+        }
+        // -----------------------------------------------------
+
         console.log('Monthly income found:', monthlyIncome?.length);
 
         // Calculate KPIs
         const totalExpenses = monthlyExpenses?.reduce((sum, e) => sum + Number(e.amount), 0) || 0;
-        const totalIncome = monthlyIncome?.reduce((sum, i) => sum + Number(i.amount), 0) || 0;
+        let baseIncome = monthlyIncome?.reduce((sum, i) => sum + Number(i.amount), 0) || 0;
+        const totalIncome = baseIncome + tWakeProfit; // Add T-WAKE profit
         const netBalance = totalIncome - totalExpenses;
 
         // Debug - count items
@@ -110,7 +136,7 @@ export async function GET(request: Request) {
                 return {
                     name,
                     depenses: totalExpenses,
-                    revenus: totalIncome,
+                    revenus: totalIncome, // Includes T-WAKE
                 };
             }
 
