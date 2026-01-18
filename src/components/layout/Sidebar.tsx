@@ -9,10 +9,11 @@ import {
     Table,
     Home,
     Settings,
-    Clock
+    Clock,
+    ShoppingBag
 } from 'lucide-react';
 
-export type NavSection = 'home' | 'history' | 'charts' | 'table' | 'filters' | 'settings';
+export type NavSection = 'home' | 'history' | 'charts' | 'table' | 'filters' | 'settings' | 't-wake';
 
 interface SidebarProps {
     activeSection: NavSection;
@@ -24,6 +25,7 @@ const navItems: { id: NavSection; label: string; icon: React.ReactNode }[] = [
     { id: 'history', label: 'Historique', icon: <Clock className="w-5 h-5" /> },
     { id: 'charts', label: 'Graphiques', icon: <BarChart3 className="w-5 h-5" /> },
     { id: 'table', label: 'Tableau', icon: <Table className="w-5 h-5" /> },
+    { id: 't-wake', label: 'T-WAKE', icon: <ShoppingBag className="w-5 h-5" /> },
     { id: 'filters', label: 'Filtres', icon: <Filter className="w-5 h-5" /> },
 ];
 

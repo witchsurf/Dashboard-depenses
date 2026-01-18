@@ -10,3 +10,4 @@ export { ConfigWizard } from './ConfigWizard';
 export { AddExpenseModal } from './AddExpenseModal';
 export { AddIncomeModal } from './AddIncomeModal';
 export { ExpenseHistory } from './ExpenseHistory';
+export { TWake } from './TWake';

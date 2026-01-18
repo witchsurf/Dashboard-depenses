@@ -10,7 +10,8 @@ import {
     DonutChart,
     AddExpenseModal,
     AddIncomeModal,
-    ExpenseHistory
+    ExpenseHistory,
+    TWake
 } from '@/components/dashboard';
 import { GlassButton, GlassCard } from '@/components/ui/GlassComponents';
 import { formatCurrency } from '@/lib/utils';
@@ -220,6 +221,11 @@ export default function DashboardPage() {
                         {/* History Section */}
                         {activeSection === 'history' && (
                             <ExpenseHistory onRefresh={handleRefresh} />
+                        )}
+
+                        {/* T-WAKE Section */}
+                        {activeSection === 't-wake' && (
+                            <TWake />
                         )}
 
                         {/* Charts Section */}
