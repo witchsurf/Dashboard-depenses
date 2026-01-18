@@ -77,6 +77,26 @@ export async function POST(request: Request) {
                     errors.push(`Update error ${productId}: ${insertError.message}`);
                 } else {
                     savedCount++;
+
+                    // Real-time Sync to Google Sheets
+                    try {
+                        const { data: prod } = await supabase
+                            .from('t_wake_products')
+                            .select('name')
+                            .eq('id', productId)
+                            .single();
+
+                        if (prod?.name) {
+                            const d = new Date(startDate);
+                            if (d.getFullYear() === 2026) {
+                                const { updateTWakeCell } = await import('@/lib/sheets');
+                                await updateTWakeCell(prod.name, d.getMonth(), targetQty);
+                                console.log(`Synced ${prod.name} for Month ${d.getMonth()} with Total ${targetQty}`);
+                            }
+                        }
+                    } catch (syncError) {
+                        console.error('Real-time sync failed:', syncError);
+                    }
                 }
             }
         }

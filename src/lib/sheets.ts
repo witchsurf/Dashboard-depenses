@@ -533,3 +533,70 @@ export function parseFrenchNumber(value: string | number | null | undefined): nu
     return isNaN(num) ? 0 : num;
 }
 
+/**
+ * Update a specific cell in T-WAKE sheet (Cakes/Biscuits)
+ * for real-time sync.
+ */
+export async function updateTWakeCell(
+    productName: string,
+    monthIndex: number, // 0 = Jan
+    totalQuantity: number
+): Promise<{ success: boolean; error?: string }> {
+    try {
+        const config = getSheetsConfig();
+        if (!config) return { success: false, error: 'Config missing' };
+
+        const accessToken = await getAccessToken(config);
+        const sheetName = 'Cakes/Biscuits';
+
+        // 1. Find Row Index
+        // Read names from A3:A100
+        const nameRange = `'${sheetName}'!A3:A100`;
+        const res = await fetch(
+            `https://sheets.googleapis.com/v4/spreadsheets/${config.sheetId}/values/${encodeURIComponent(nameRange)}`,
+            { headers: { Authorization: `Bearer ${accessToken}` } }
+        );
+
+        if (!res.ok) return { success: false, error: 'Failed to read sheet names' };
+
+        const data = await res.json();
+        const rows = data.values || [];
+
+        const rowIndex = rows.findIndex((r: any) => r[0] === productName);
+
+        if (rowIndex === -1) {
+            console.warn(`Product ${productName} not found in sheet ${sheetName}`);
+            return { success: true }; // Silent fail (product might be new and not in sheet yet)
+        }
+
+        // 2. Determine Cell Address
+        // Data starts at Row 3 (Index 0 is Row 3)
+        const sheetRow = rowIndex + 3;
+
+        // Month Cols: Jan = E (Index 4)
+        // A=0, B=1, C=2, D=3, E=4
+        const colChar = String.fromCharCode(65 + 4 + monthIndex);
+        const range = `'${sheetName}'!${colChar}${sheetRow}`;
+
+        // 3. Update Cell
+        const updateRes = await fetch(
+            `https://sheets.googleapis.com/v4/spreadsheets/${config.sheetId}/values/${encodeURIComponent(range)}?valueInputOption=USER_ENTERED`,
+            {
+                method: 'PUT',
+                headers: {
+                    Authorization: `Bearer ${accessToken}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ values: [[totalQuantity]] })
+            }
+        );
+
+        if (!updateRes.ok) return { success: false, error: 'Failed to update cell' };
+
+        return { success: true };
+
+    } catch (error) {
+        console.error('TWake Sync Error:', error);
+        return { success: false, error: 'Unknown sync error' };
+    }
+}
