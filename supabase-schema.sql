@@ -108,3 +108,36 @@ BEGIN
     RETURN result;
 END;
 $$ LANGUAGE plpgsql;
+
+-- =============================================
+-- T-WAKE (Cakes/Biscuits) TABLES
+-- =============================================
+
+-- 11. Table des produits T-WAKE
+CREATE TABLE IF NOT EXISTS t_wake_products (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR(100) NOT NULL UNIQUE,
+    selling_price DECIMAL(10, 2) NOT NULL DEFAULT 0,
+    unit_cost DECIMAL(10, 2) NOT NULL DEFAULT 0,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 12. Table des ventes T-WAKE
+CREATE TABLE IF NOT EXISTS t_wake_sales (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    product_id UUID REFERENCES t_wake_products(id) ON DELETE CASCADE,
+    month DATE NOT NULL,
+    quantity DECIMAL(10, 2) NOT NULL DEFAULT 0,
+    last_updated TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    UNIQUE(product_id, month)
+);
+
+-- 13. RLS Policies for T-WAKE
+ALTER TABLE t_wake_products ENABLE ROW LEVEL SECURITY;
+ALTER TABLE t_wake_sales ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Allow public read t_wake_products" ON t_wake_products FOR SELECT USING (true);
+CREATE POLICY "Allow public write t_wake_products" ON t_wake_products FOR ALL USING (true) WITH CHECK (true);
+
+CREATE POLICY "Allow public read t_wake_sales" ON t_wake_sales FOR SELECT USING (true);
+CREATE POLICY "Allow public write t_wake_sales" ON t_wake_sales FOR ALL USING (true) WITH CHECK (true);

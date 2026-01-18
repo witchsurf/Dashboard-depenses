@@ -105,7 +105,7 @@ async function createJWT(config: SheetsConfig): Promise<string> {
 /**
  * Get access token from Google OAuth
  */
-async function getAccessToken(config: SheetsConfig): Promise<string> {
+export async function getAccessToken(config: SheetsConfig): Promise<string> {
     const jwt = await createJWT(config);
 
     const response = await fetch('https://oauth2.googleapis.com/token', {
