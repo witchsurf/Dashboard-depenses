@@ -2,12 +2,17 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 function getSupabaseClient() {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
     if (!url || !key) return null;
-    return createClient(url, key);
+    return createClient(url, key, {
+        global: {
+            headers: { 'Cache-Control': 'no-store' }
+        }
+    });
 }
 
 /**
@@ -33,7 +38,7 @@ export async function GET(request: Request) {
         // Fetch expenses for January 2026 - same as debug endpoint
         const { data: monthlyExpenses, error: expenseError } = await supabase
             .from('expenses')
-            .select('id, date, amount, category')
+            .select('id, date, amount, category, created_at')
             .gte('date', monthStart)
             .lt('date', monthEnd);
 
