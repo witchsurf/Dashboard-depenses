@@ -1,5 +1,5 @@
 import { SheetData, SheetRow } from '@/types';
-import { parseFrenchNumber } from './utils';
+
 
 /**
  * Google Sheets API v4 integration
@@ -517,5 +517,19 @@ export async function appendExpenseToSheet(
         date.getMonth(),
         date.getFullYear()
     );
+}
+
+/**
+ * Helper to parse "French" formatted numbers (space as thousand separator, comma as decimal)
+ * e.g. "1 500,50" -> 1500.50
+ */
+export function parseFrenchNumber(value: string | number | null | undefined): number {
+    if (value === null || value === undefined || value === '') return 0;
+    if (typeof value === 'number') return value;
+
+    // Remove non-breaking spaces, regular spaces, and replace comma with dot
+    const clean = value.replace(/[\s\u00A0\u202F]/g, '').replace(',', '.');
+    const num = parseFloat(clean);
+    return isNaN(num) ? 0 : num;
 }
 
