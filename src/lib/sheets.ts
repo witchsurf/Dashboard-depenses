@@ -244,22 +244,26 @@ export async function fetchSheetData(tabName?: string): Promise<SheetData> {
  * Maps category/subcategory to the row number in the sheet
  */
 const CATEGORY_ROW_MAP: Record<string, number> = {
-    // Maison (starts at row 25)
+    // Maison (rows 24-37 in Google Sheet)
     'Maison/Loyers/emprunt': 25,
     'Maison/Électricité/gaz': 26,
+    'Maison/Electricité/gaz': 26, // alias without accent
     'Maison/Essence': 27,
     'Maison/Eau': 28,
     'Maison/Ménage': 29,
+    'Maison/Menage': 29, // alias without accent
     'Maison/Téléphones portables': 30,
     'Maison/Internet': 31,
     'Maison/Cable/Satellite': 32,
     'Maison/Réparation/entretien': 33,
     'Maison/Équipements': 34,
+    'Maison/Equipements': 34, // alias without accent
     'Maison/Maintenance': 35,
     'Maison/Déco': 36,
+    'Maison/Deco': 36, // alias without accent
     'Maison/Autre': 37,
 
-    // Vie Quotidienne (starts at row 41)
+    // Vie Quotidienne (rows 40-47)
     'Vie Quotidienne/Courses': 41,
     'Vie Quotidienne/Argent de poche': 42,
     'Vie Quotidienne/Habillement': 43,
@@ -267,42 +271,119 @@ const CATEGORY_ROW_MAP: Record<string, number> = {
     'Vie Quotidienne/Coiffeur': 45,
     'Vie Quotidienne/Divers': 46,
 
-    // Enfants (starts at row 50)
+    // Enfants (rows 49-60)
     'Enfants/Habillement/bijoux': 50,
     'Enfants/Frais études': 51,
+    'Enfants/Frais etudes': 51, // alias without accent
     'Enfants/Argent de poche': 52,
     'Enfants/Tél/internet': 53,
+    'Enfants/Tel/internet': 53, // alias without accent
     'Enfants/Activités': 54,
+    'Enfants/Activites': 54, // alias without accent
     'Enfants/Transports': 55,
     'Enfants/Santé': 56,
+    'Enfants/Sante': 56, // alias without accent
     'Enfants/Nounou': 57,
     'Enfants/Jeux/loisirs': 58,
     'Enfants/Divers': 59,
 
-    // Transport (starts at row 63)
+    // Transport (rows 62-69)
     'Transport/Voiture': 63,
     'Transport/Essence/électricité': 64,
+    'Transport/Essence/electricite': 64, // alias without accent
     'Transport/Réparations/contrôles': 65,
+    'Transport/Reparations/controles': 65, // alias without accent
     'Transport/Transport en commun': 66,
     'Transport/Bus/Taxi': 67,
     'Transport/Divers': 68,
 
-    // Santé (starts at row 72)
+    // Santé (rows 71-77)
     'Santé/Médecins/dentiste': 72,
+    'Sante/Medecins/dentiste': 72, // alias without accent
     'Santé/Médicaments/soins': 73,
+    'Sante/Medicaments/soins': 73, // alias without accent
     'Santé/Mutuelle': 74,
+    'Sante/Mutuelle': 74, // alias without accent
     'Santé/Urgences': 75,
+    'Sante/Urgences': 75, // alias without accent
     'Santé/Divers': 76,
+    'Sante/Divers': 76, // alias without accent
 
-    // Assurances (starts at row 80)
+    // Assurances (rows 79-84)
     'Assurances/Auto': 80,
     'Assurances/Habitation': 81,
     'Assurances/Assurance vie': 82,
     'Assurances/Assurance scolaire': 83,
 
-    // Divers (starts at row 150)
+    // Dons (rows 87-92)
+    'Dons/Cadeaux divers': 88,
+    'Dons/Organisations': 89,
+    'Dons/Communauté religieuse': 90,
+    'Dons/Communaute religieuse': 90, // alias without accent
+    'Dons/Autre': 91,
+
+    // Épargne (rows 94-101)
+    'Épargne/Épargne logement': 95,
+    'Epargne/Epargne logement': 95, // alias without accent
+    'Épargne/Livret': 96,
+    'Epargne/Livret': 96, // alias without accent
+    'Épargne/Retraite': 97,
+    'Epargne/Retraite': 97, // alias without accent
+    'Épargne/Investissements': 98,
+    'Epargne/Investissements': 98, // alias without accent
+    'Épargne/Projets': 99,
+    'Epargne/Projets': 99, // alias without accent
+    'Épargne/Divers': 100,
+    'Epargne/Divers': 100, // alias without accent
+
+    // Impôts (rows 103-108)
+    'Impôts/Impôt sur le revenu': 104,
+    'Impots/Impot sur le revenu': 104, // alias without accent
+    'Impôts/Taxe habitation/foncière': 105,
+    'Impots/Taxe habitation/fonciere': 105, // alias without accent
+    'Impôts/Autre': 106,
+    'Impots/Autre': 106, // alias without accent
+
+    // Loisirs (rows 110-123)
+    'Loisirs/Vidéos/DVDs': 111,
+    'Loisirs/Videos/DVDs': 111, // alias without accent
+    'Loisirs/Musique': 112,
+    'Loisirs/Jeux': 113,
+    'Loisirs/Locations': 114,
+    'Loisirs/Cinéma': 115,
+    'Loisirs/Cinema': 115, // alias without accent
+    'Loisirs/Concerts': 116,
+    'Loisirs/Livres': 117,
+    'Loisirs/Film/Photos': 118,
+    'Loisirs/Sports': 119,
+    'Loisirs/Sorties': 120,
+    'Loisirs/Divers': 121,
+
+    // Animaux (rows 125-130)
+    'Animaux/Nourriture/entretien': 126,
+    'Animaux/Véto et soins': 127,
+    'Animaux/Veto et soins': 127, // alias without accent
+    'Animaux/Divers': 128,
+
+    // Abonnements (rows 132-138)
+    'Abonnements/Journaux/magazines': 133,
+    'Abonnements/Club': 134,
+    'Abonnements/Abo 1': 135,
+    'Abonnements/Abo 2': 136,
+    'Abonnements/Divers': 137,
+
+    // Vacances (rows 140-147)
+    'Vacances/Transport': 141,
+    'Vacances/Location': 142,
+    'Vacances/Repas': 143,
+    'Vacances/Location voiture': 144,
+    'Vacances/Visites/loisirs': 145,
+    'Vacances/Divers': 146,
+
+    // Divers (rows 149-155)
     'Divers/Frais de banque': 150,
     'Divers/Remboursements prêts': 151,
+    'Divers/Remboursements prets': 151, // alias without accent
     'Divers/Cordonnier': 152,
     'Divers/Pressing': 153,
     'Divers/Autre': 154,
