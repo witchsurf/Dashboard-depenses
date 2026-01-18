@@ -172,17 +172,18 @@ export async function GET(request: Request) {
         });
 
         // Get recent transactions (Expenses + Income)
+        // Fetch more items (50) to ensure we get a good mix if one category has many recent entries
         const { data: recentExpenses } = await supabase
             .from('expenses')
             .select('*')
             .order('created_at', { ascending: false })
-            .limit(10);
+            .limit(50);
 
         const { data: recentIncome } = await supabase
             .from('income')
             .select('*')
             .order('created_at', { ascending: false })
-            .limit(10);
+            .limit(50);
 
         // Merge and Sort
         const mixedTransactions = [
