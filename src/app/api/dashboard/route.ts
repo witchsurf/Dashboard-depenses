@@ -261,12 +261,9 @@ export async function GET(request: Request) {
                 {
                     label: 'Transactions',
                     value: (monthlyExpenses?.length || 0) + (monthlyIncome?.length || 0) + (tWakeTxs?.filter((t: any) => {
-                        const dateStr = String(t.date || '');
                         const descStr = String(t.description || '');
-                        // Filter out if date is Jan 1st OR description contains 'Import'
-                        if (dateStr.includes('2026-01-01')) return false;
-                        if (descStr.includes('Import')) return false;
-                        return true;
+                        // Only filter out automatic initial imports
+                        return !descStr.includes('Import Initial');
                     }).length || 0),
                     format: 'number',
                     trend: 'stable',
