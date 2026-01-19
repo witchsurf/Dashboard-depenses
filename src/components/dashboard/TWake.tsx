@@ -276,7 +276,7 @@ export function TWake({ onSync }: TWakeProps) {
                 </div>
 
                 {/* Data Grid */}
-                <div className="-mx-4 sm:mx-0 overflow-x-auto pb-4" style={{ WebkitOverflowScrolling: 'touch' }}>
+                <div className="-mx-4 sm:mx-0 overflow-x-auto pb-4 relative z-0" style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-x', overscrollBehaviorX: 'contain' }}>
                     <table className="w-full min-w-[1200px] text-sm text-left border-separate border-spacing-0">
                         <thead className="text-xs uppercase text-white/60 bg-white/5">
                             <tr>
