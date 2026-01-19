@@ -276,52 +276,54 @@ export function TWake({ onSync }: TWakeProps) {
                 </div>
 
                 {/* Data Grid */}
-                <div className="overflow-x-auto">
-                    <table className="w-full text-sm text-left">
-                        <thead className="text-xs uppercase text-white/60 bg-white/5">
-                            <tr>
-                                <th className="px-3 py-3 rounded-tl-lg sticky left-0 z-10 glass">Produit</th>
-                                <th className="px-3 py-3 text-right">Prix</th>
-                                <th className="px-3 py-3 text-right">Marge</th>
-                                {months.map(m => (
-                                    <th key={m} className="px-2 py-3 text-center min-w-[60px]">{m}</th>
-                                ))}
-                                <th className="px-3 py-3 text-right rounded-tr-lg">Total</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {isLoading ? (
-                                <tr><td colSpan={16} className="text-center py-8">Chargement...</td></tr>
-                            ) : products.map(p => {
-                                const annualQty = Array.from(sales.get(p.id)?.values() || []).reduce((a, b) => a + b, 0);
-                                const margin = p.selling_price - p.unit_cost;
-                                return (
-                                    <tr key={p.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
-                                        <td className="px-3 py-2 font-medium sticky left-0 z-10 glass">{p.name}</td>
-                                        <td className="px-3 py-2 text-right opacity-70">{formatCurrency(p.selling_price)}</td>
-                                        <td className="px-3 py-2 text-right text-emerald-400">{formatCurrency(margin)}</td>
+                <div className="-mx-4 sm:mx-0 overflow-x-auto pb-4" style={{ WebkitOverflowScrolling: 'touch' }}>
+                    <div className="px-4 sm:px-0 inline-block min-w-full align-middle">
+                        <table className="w-full text-sm text-left border-separate border-spacing-0">
+                            <thead className="text-xs uppercase text-white/60 bg-white/5">
+                                <tr>
+                                    <th className="px-3 py-3 rounded-tl-lg sticky left-0 z-20 glass bg-[#1e1b4b] sm:bg-transparent backdrop-blur-xl border-r border-white/10">Produit</th>
+                                    <th className="px-3 py-3 text-right whitespace-nowrap">Prix</th>
+                                    <th className="px-3 py-3 text-right whitespace-nowrap">Marge</th>
+                                    {months.map(m => (
+                                        <th key={m} className="px-2 py-3 text-center min-w-[60px]">{m}</th>
+                                    ))}
+                                    <th className="px-3 py-3 text-right rounded-tr-lg">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {isLoading ? (
+                                    <tr><td colSpan={16} className="text-center py-8">Chargement...</td></tr>
+                                ) : products.map(p => {
+                                    const annualQty = Array.from(sales.get(p.id)?.values() || []).reduce((a, b) => a + b, 0);
+                                    const margin = p.selling_price - p.unit_cost;
+                                    return (
+                                        <tr key={p.id} className="border-b border-white/5 hover:bg-white/5 transition-colors group">
+                                            <td className="px-3 py-2 font-medium sticky left-0 z-20 glass bg-[#1e1b4b] sm:bg-transparent backdrop-blur-xl border-r border-white/10 group-hover:bg-[#2a2655]">{p.name}</td>
+                                            <td className="px-3 py-2 text-right opacity-70 whitespace-nowrap">{formatCurrency(p.selling_price)}</td>
+                                            <td className="px-3 py-2 text-right text-emerald-400 whitespace-nowrap">{formatCurrency(margin)}</td>
 
-                                        {months.map((_, idx) => {
-                                            const qty = sales.get(p.id)?.get(idx) || 0;
-                                            return (
-                                                <td key={idx} className="px-1 py-1">
-                                                    <input
-                                                        type="number"
-                                                        value={qty || ''}
-                                                        onChange={(e) => handleQuantityChange(p.id, idx, e.target.value)}
-                                                        className="w-full bg-transparent border-b border-white/10 focus:border-purple-400 text-center text-white focus:outline-none p-1 transition-colors"
-                                                        placeholder="-"
-                                                    />
-                                                </td>
-                                            );
-                                        })}
+                                            {months.map((_, idx) => {
+                                                const qty = sales.get(p.id)?.get(idx) || 0;
+                                                return (
+                                                    <td key={idx} className="px-1 py-1 min-w-[60px]">
+                                                        <input
+                                                            type="number"
+                                                            value={qty || ''}
+                                                            onChange={(e) => handleQuantityChange(p.id, idx, e.target.value)}
+                                                            className="w-full bg-transparent border-b border-white/10 focus:border-purple-400 text-center text-white focus:outline-none p-1 transition-colors text-base"
+                                                            placeholder="-"
+                                                        />
+                                                    </td>
+                                                );
+                                            })}
 
-                                        <td className="px-3 py-2 text-right font-bold text-white/80">{annualQty}</td>
-                                    </tr>
-                                );
-                            })}
-                        </tbody>
-                    </table>
+                                            <td className="px-3 py-2 text-right font-bold text-white/80">{annualQty}</td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </GlassCard>
 
