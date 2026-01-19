@@ -177,7 +177,7 @@ export function TWake({ onSync }: TWakeProps) {
 
     return (
         <div className="space-y-6">
-            <GlassCard padding="none" className="overflow-hidden">
+            <GlassCard padding="none" className="">
                 <div className="p-4 sm:p-6">
                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                         <div>
@@ -278,12 +278,12 @@ export function TWake({ onSync }: TWakeProps) {
 
                 </div>
 
-                {/* Data Grid - Full Width, No Padding Constraints */}
-                <div className="w-full overflow-x-auto pb-4 relative z-0" style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-x', overscrollBehaviorX: 'contain' }}>
+                {/* Data Grid - Debug Border Added */}
+                <div className="w-full overflow-x-auto pb-4 relative z-0 border-2 border-red-500/50" style={{ WebkitOverflowScrolling: 'touch' }}>
                     <table className="w-full min-w-[1200px] text-sm text-left border-separate border-spacing-0">
                         <thead className="text-xs uppercase text-white/60 bg-white/5">
                             <tr>
-                                <th className="px-3 py-3 rounded-tl-lg sticky left-0 z-20 glass bg-[#1e1b4b] sm:bg-transparent backdrop-blur-xl border-r border-white/10 w-[140px] min-w-[140px]">Produit</th>
+                                <th className="px-3 py-3 rounded-tl-lg border-r border-white/10 w-[140px] min-w-[140px]">Produit</th>
                                 <th className="px-3 py-3 text-right whitespace-nowrap w-[100px]">Prix</th>
                                 <th className="px-3 py-3 text-right whitespace-nowrap w-[100px]">Marge</th>
                                 {months.map(m => (
@@ -300,7 +300,7 @@ export function TWake({ onSync }: TWakeProps) {
                                 const margin = p.selling_price - p.unit_cost;
                                 return (
                                     <tr key={p.id} className="border-b border-white/5 hover:bg-white/5 transition-colors group">
-                                        <td className="px-3 py-2 font-medium sticky left-0 z-20 glass bg-[#1e1b4b] sm:bg-transparent backdrop-blur-xl border-r border-white/10 group-hover:bg-[#2a2655]">{p.name}</td>
+                                        <td className="px-3 py-2 font-medium border-r border-white/10 group-hover:bg-[#2a2655]">{p.name}</td>
                                         <td className="px-3 py-2 text-right opacity-70 whitespace-nowrap">{formatCurrency(p.selling_price)}</td>
                                         <td className="px-3 py-2 text-right text-emerald-400 whitespace-nowrap">{formatCurrency(margin)}</td>
 
