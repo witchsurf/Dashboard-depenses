@@ -118,7 +118,7 @@ export function Sidebar({ activeSection, onSectionChange }: SidebarProps) {
 
                     {/* Version Indicator */}
                     <div className="mt-2 px-3 text-xs text-white/20 text-center md:opacity-0 md:group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                        v1.1.1
+                        v1.2.0-rewrite
                     </div>
                 </div>
             </aside>

@@ -177,106 +177,109 @@ export function TWake({ onSync }: TWakeProps) {
 
     return (
         <div className="space-y-6">
-            <GlassCard className="p-6">
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-                    <div>
-                        <h2 className="text-xl font-bold text-white">Cakes & Biscuits (2026)</h2>
-                        <p className="text-white/60 text-sm">Gestion des ventes et synchronisation</p>
+            <GlassCard padding="none" className="overflow-hidden">
+                <div className="p-4 sm:p-6">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                        <div>
+                            <h2 className="text-xl font-bold text-white">Cakes & Biscuits (2026)</h2>
+                            <p className="text-white/60 text-sm">Gestion des ventes et synchronisation</p>
+                        </div>
+
+                        <div className="flex gap-2">
+                            <GlassButton
+                                onClick={() => setShowAddSale(true)}
+                                variant="primary"
+                                className="mr-2 bg-emerald-500/80 hover:bg-emerald-500"
+                            >
+                                <div className="flex items-center gap-2">
+                                    <Plus className="w-4 h-4" />
+                                    <span className="hidden sm:inline">Vente</span>
+                                </div>
+                            </GlassButton>
+                            <GlassButton
+                                onClick={() => setShowAddProduct(true)}
+                                variant="default"
+                                className="mr-2"
+                            >
+                                <div className="flex items-center gap-2">
+                                    <Plus className="w-4 h-4" />
+                                    <span className="hidden sm:inline">Produit</span>
+                                </div>
+                            </GlassButton>
+                            <GlassButton
+                                onClick={handleSave}
+                                disabled={isSaving || !hasUnsavedChanges}
+                                variant="primary"
+                            >
+                                <div className="flex items-center gap-2">
+                                    <Save className="w-4 h-4" />
+                                    {isSaving ? '...' : 'Sauvegarder'}
+                                </div>
+                            </GlassButton>
+                            <GlassButton
+                                onClick={handleSyncToSheets}
+                                disabled={isSyncing}
+                                variant="default"
+                            >
+                                <div className="flex items-center gap-2">
+                                    <UploadCloud className="w-4 h-4" />
+                                    {isSyncing ? 'Sync...' : 'Sync Sheets'}
+                                </div>
+                            </GlassButton>
+                        </div>
                     </div>
 
-                    <div className="flex gap-2">
-                        <GlassButton
-                            onClick={() => setShowAddSale(true)}
-                            variant="primary"
-                            className="mr-2 bg-emerald-500/80 hover:bg-emerald-500"
-                        >
-                            <div className="flex items-center gap-2">
-                                <Plus className="w-4 h-4" />
-                                <span className="hidden sm:inline">Vente</span>
+                    {message && (
+                        <div className={`p-3 rounded-lg flex items-center gap-2 mb-4 ${message.type === 'success' ? 'bg-green-500/20 text-green-200' : 'bg-red-500/20 text-red-200'
+                            }`}>
+                            {message.type === 'success' ? <CheckCircle2 className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
+                            {message.text}
+                        </div>
+                    )}
+
+                    {/* KPI Review */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                        <div className="glass p-4 rounded-xl bg-gradient-to-br from-blue-500/10 to-indigo-500/10">
+                            <div className="flex justify-between items-start mb-2">
+                                <p className="text-sm text-blue-300">Aujourd&apos;hui</p>
+                                <span className="text-xs bg-blue-500/20 text-blue-200 px-2 py-0.5 rounded-full">{stats.today.count} exp.</span>
                             </div>
-                        </GlassButton>
-                        <GlassButton
-                            onClick={() => setShowAddProduct(true)}
-                            variant="default"
-                            className="mr-2"
-                        >
-                            <div className="flex items-center gap-2">
-                                <Plus className="w-4 h-4" />
-                                <span className="hidden sm:inline">Produit</span>
+                            <p className="text-2xl font-bold text-white">{formatCurrency(stats.today.revenue)}</p>
+                            <p className="text-xs text-blue-300/60 mt-1">Marge: {formatCurrency(stats.today.profit)}</p>
+                        </div>
+
+                        <div className="glass p-4 rounded-xl bg-gradient-to-br from-purple-500/10 to-pink-500/10">
+                            <div className="flex justify-between items-start mb-2">
+                                <p className="text-sm text-purple-300">Cette Semaine</p>
+                                <span className="text-xs bg-purple-500/20 text-purple-200 px-2 py-0.5 rounded-full">{stats.week.count} exp.</span>
                             </div>
-                        </GlassButton>
-                        <GlassButton
-                            onClick={handleSave}
-                            disabled={isSaving || !hasUnsavedChanges}
-                            variant="primary"
-                        >
-                            <div className="flex items-center gap-2">
-                                <Save className="w-4 h-4" />
-                                {isSaving ? '...' : 'Sauvegarder'}
+                            <p className="text-2xl font-bold text-white">{formatCurrency(stats.week.revenue)}</p>
+                            <p className="text-xs text-purple-300/60 mt-1">Marge: {formatCurrency(stats.week.profit)}</p>
+                        </div>
+
+                        <div className="glass p-4 rounded-xl bg-gradient-to-br from-emerald-500/10 to-teal-500/10">
+                            <div className="flex justify-between items-start mb-2">
+                                <p className="text-sm text-emerald-300">Ce Mois</p>
+                                <span className="text-xs bg-emerald-500/20 text-emerald-200 px-2 py-0.5 rounded-full">{stats.month.count} exp.</span>
                             </div>
-                        </GlassButton>
-                        <GlassButton
-                            onClick={handleSyncToSheets}
-                            disabled={isSyncing}
-                            variant="default"
-                        >
-                            <div className="flex items-center gap-2">
-                                <UploadCloud className="w-4 h-4" />
-                                {isSyncing ? 'Sync...' : 'Sync Sheets'}
+                            <p className="text-2xl font-bold text-white">{formatCurrency(stats.month.revenue)}</p>
+                            <p className="text-xs text-emerald-300/60 mt-1">Marge: {formatCurrency(stats.month.profit)}</p>
+                        </div>
+
+                        <div className="glass p-4 rounded-xl bg-gradient-to-br from-orange-500/10 to-red-500/10">
+                            <div className="flex justify-between items-start mb-2">
+                                <p className="text-sm text-orange-300">Cette Année</p>
+                                <span className="text-xs bg-orange-500/20 text-orange-200 px-2 py-0.5 rounded-full">{stats.year.count} exp.</span>
                             </div>
-                        </GlassButton>
+                            <p className="text-2xl font-bold text-white">{formatCurrency(stats.year.revenue)}</p>
+                            <p className="text-xs text-orange-300/60 mt-1">Marge: {formatCurrency(stats.year.profit)}</p>
+                        </div>
                     </div>
+
                 </div>
 
-                {message && (
-                    <div className={`p-3 rounded-lg flex items-center gap-2 mb-4 ${message.type === 'success' ? 'bg-green-500/20 text-green-200' : 'bg-red-500/20 text-red-200'
-                        }`}>
-                        {message.type === 'success' ? <CheckCircle2 className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
-                        {message.text}
-                    </div>
-                )}
-
-                {/* KPI Review */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                    <div className="glass p-4 rounded-xl bg-gradient-to-br from-blue-500/10 to-indigo-500/10">
-                        <div className="flex justify-between items-start mb-2">
-                            <p className="text-sm text-blue-300">Aujourd&apos;hui</p>
-                            <span className="text-xs bg-blue-500/20 text-blue-200 px-2 py-0.5 rounded-full">{stats.today.count} exp.</span>
-                        </div>
-                        <p className="text-2xl font-bold text-white">{formatCurrency(stats.today.revenue)}</p>
-                        <p className="text-xs text-blue-300/60 mt-1">Marge: {formatCurrency(stats.today.profit)}</p>
-                    </div>
-
-                    <div className="glass p-4 rounded-xl bg-gradient-to-br from-purple-500/10 to-pink-500/10">
-                        <div className="flex justify-between items-start mb-2">
-                            <p className="text-sm text-purple-300">Cette Semaine</p>
-                            <span className="text-xs bg-purple-500/20 text-purple-200 px-2 py-0.5 rounded-full">{stats.week.count} exp.</span>
-                        </div>
-                        <p className="text-2xl font-bold text-white">{formatCurrency(stats.week.revenue)}</p>
-                        <p className="text-xs text-purple-300/60 mt-1">Marge: {formatCurrency(stats.week.profit)}</p>
-                    </div>
-
-                    <div className="glass p-4 rounded-xl bg-gradient-to-br from-emerald-500/10 to-teal-500/10">
-                        <div className="flex justify-between items-start mb-2">
-                            <p className="text-sm text-emerald-300">Ce Mois</p>
-                            <span className="text-xs bg-emerald-500/20 text-emerald-200 px-2 py-0.5 rounded-full">{stats.month.count} exp.</span>
-                        </div>
-                        <p className="text-2xl font-bold text-white">{formatCurrency(stats.month.revenue)}</p>
-                        <p className="text-xs text-emerald-300/60 mt-1">Marge: {formatCurrency(stats.month.profit)}</p>
-                    </div>
-
-                    <div className="glass p-4 rounded-xl bg-gradient-to-br from-orange-500/10 to-red-500/10">
-                        <div className="flex justify-between items-start mb-2">
-                            <p className="text-sm text-orange-300">Cette Année</p>
-                            <span className="text-xs bg-orange-500/20 text-orange-200 px-2 py-0.5 rounded-full">{stats.year.count} exp.</span>
-                        </div>
-                        <p className="text-2xl font-bold text-white">{formatCurrency(stats.year.revenue)}</p>
-                        <p className="text-xs text-orange-300/60 mt-1">Marge: {formatCurrency(stats.year.profit)}</p>
-                    </div>
-                </div>
-
-                {/* Data Grid */}
-                <div className="-mx-4 sm:mx-0 overflow-x-auto pb-4 relative z-0" style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-x', overscrollBehaviorX: 'contain' }}>
+                {/* Data Grid - Full Width, No Padding Constraints */}
+                <div className="w-full overflow-x-auto pb-4 relative z-0" style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-x', overscrollBehaviorX: 'contain' }}>
                     <table className="w-full min-w-[1200px] text-sm text-left border-separate border-spacing-0">
                         <thead className="text-xs uppercase text-white/60 bg-white/5">
                             <tr>
