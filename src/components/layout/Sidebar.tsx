@@ -115,6 +115,11 @@ export function Sidebar({ activeSection, onSectionChange }: SidebarProps) {
                             Paramètres
                         </span>
                     </button>
+
+                    {/* Version Indicator */}
+                    <div className="mt-2 px-3 text-xs text-white/20 text-center md:opacity-0 md:group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                        v1.1.0-fix
+                    </div>
                 </div>
             </aside>
         </>
