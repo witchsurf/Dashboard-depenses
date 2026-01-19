@@ -177,6 +177,7 @@ export function TWake({ onSync }: TWakeProps) {
 
     return (
         <div className="space-y-6">
+            {/* Header Card - Kept as Glass because it works */}
             <GlassCard padding="none" className="">
                 <div className="p-4 sm:p-6">
                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
@@ -277,9 +278,15 @@ export function TWake({ onSync }: TWakeProps) {
                     </div>
 
                 </div>
+            </GlassCard>
 
-                {/* Data Grid - Debug Border Added */}
-                <div className="w-full overflow-x-auto pb-4 relative z-0 border-2 border-red-500/50" style={{ WebkitOverflowScrolling: 'touch' }}>
+            {/* Data Grid - Removed GlassCard, using plain div for maximum compatibility */}
+            <div className="bg-slate-900/50 rounded-xl border border-white/10 overflow-hidden">
+                <div className="p-4">
+                    <h3 className="text-lg font-bold text-white mb-4">Tableau des Ventes</h3>
+                </div>
+
+                <div className="w-full overflow-x-auto pb-4 relative z-0" style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-x', overscrollBehaviorX: 'contain' }}>
                     <table className="w-full min-w-[1200px] text-sm text-left border-separate border-spacing-0">
                         <thead className="text-xs uppercase text-white/60 bg-white/5">
                             <tr>
@@ -326,7 +333,7 @@ export function TWake({ onSync }: TWakeProps) {
                         </tbody>
                     </table>
                 </div>
-            </GlassCard>
+            </div>
 
             <AddProductModal
                 isOpen={showAddProduct}
