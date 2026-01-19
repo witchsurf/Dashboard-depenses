@@ -158,8 +158,8 @@ export function ExpenseHistory({ onRefresh }: ExpenseHistoryProps) {
                             key={mode}
                             onClick={() => setViewMode(mode)}
                             className={`px-3 py-1 rounded text-sm transition-all ${viewMode === mode
-                                    ? 'bg-purple-500/50 text-white'
-                                    : 'text-white/60 hover:text-white'
+                                ? 'bg-purple-500/50 text-white'
+                                : 'text-white/60 hover:text-white'
                                 }`}
                         >
                             {mode === 'day' ? 'Jour' : mode === 'week' ? 'Semaine' : 'Mois'}
@@ -187,7 +187,7 @@ export function ExpenseHistory({ onRefresh }: ExpenseHistoryProps) {
                         onClick={goToToday}
                         className="text-xs px-2 py-1 bg-white/10 hover:bg-white/20 rounded transition-colors"
                     >
-                        Aujourd'hui
+                        Aujourd&apos;hui
                     </button>
                     <button
                         onClick={() => navigateDate('next')}
@@ -211,7 +211,7 @@ export function ExpenseHistory({ onRefresh }: ExpenseHistoryProps) {
             ) : expenses.length === 0 ? (
                 <div className="text-center py-12 text-white/50">
                     <p className="text-4xl mb-4">📭</p>
-                    <p>Aucune dépense pour cette période</p>
+                    <p>Aucune dépense trouvée pour cette période.</p>
                 </div>
             ) : (
                 <>

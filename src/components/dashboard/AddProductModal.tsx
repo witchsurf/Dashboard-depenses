@@ -180,7 +180,7 @@ export function AddProductModal({ isOpen, onClose, onSuccess }: AddProductModalP
                     </div>
                     {suggestions.length > 0 && (
                         <p className="text-xs text-white/40 mt-1">
-                            {suggestions.length} produits trouvés dans le sheet mais pas dans l'app.
+                            {suggestions.length} produits trouvés dans le sheet mais pas dans l&apos;app.
                         </p>
                     )}
                 </div>

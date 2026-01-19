@@ -240,7 +240,7 @@ export function TWake({ onSync }: TWakeProps) {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                     <div className="glass p-4 rounded-xl bg-gradient-to-br from-blue-500/10 to-indigo-500/10">
                         <div className="flex justify-between items-start mb-2">
-                            <p className="text-sm text-blue-300">Aujourd'hui</p>
+                            <p className="text-sm text-blue-300">Aujourd&apos;hui</p>
                             <span className="text-xs bg-blue-500/20 text-blue-200 px-2 py-0.5 rounded-full">{stats.today.count} exp.</span>
                         </div>
                         <p className="text-2xl font-bold text-white">{formatCurrency(stats.today.revenue)}</p>
