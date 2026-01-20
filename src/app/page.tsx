@@ -19,6 +19,7 @@ import { GlassButton, GlassCard } from '@/components/ui/GlassComponents';
 import { formatCurrency } from '@/lib/utils';
 import { format, subMonths, addMonths } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { FilterState } from '@/types';
 
 interface DashboardData {
     kpis: Array<{
@@ -54,6 +55,11 @@ export default function DashboardPage() {
     const [showAddExpense, setShowAddExpense] = useState(false);
     const [showAddIncome, setShowAddIncome] = useState(false);
     const [selectedMonth, setSelectedMonth] = useState(new Date());
+    const [filters, setFilters] = useState<FilterState>({
+        dateRange: { start: null, end: null },
+        categories: [],
+        searchQuery: '',
+    });
 
     const loadData = useCallback(async () => {
         setIsLoading(true);
@@ -319,7 +325,11 @@ export default function DashboardPage() {
 
                         {/* Filters Section */}
                         {activeSection === 'filters' && (
-                            <Filters />
+                            <Filters
+                                categories={data?.categoryData.map(c => c.name) || []}
+                                filters={filters}
+                                onFiltersChange={setFilters}
+                            />
                         )}
 
                         {/* Settings Section */}
