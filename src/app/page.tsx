@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Plus, RefreshCw, TrendingUp, TrendingDown, Wallet, ArrowUpRight, ArrowDownLeft } from 'lucide-react';
+import { Plus, RefreshCw, TrendingUp, TrendingDown, Wallet, ArrowUpRight, ArrowDownLeft, ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
 import { Sidebar, type NavSection } from '@/components/layout';
 import {
     KPICards,
@@ -15,6 +15,8 @@ import {
 } from '@/components/dashboard';
 import { GlassButton, GlassCard } from '@/components/ui/GlassComponents';
 import { formatCurrency } from '@/lib/utils';
+import { format, subMonths, addMonths } from 'date-fns';
+import { fr } from 'date-fns/locale';
 
 interface DashboardData {
     kpis: Array<{
@@ -49,14 +51,18 @@ export default function DashboardPage() {
     const [activeSection, setActiveSection] = useState<NavSection>('home');
     const [showAddExpense, setShowAddExpense] = useState(false);
     const [showAddIncome, setShowAddIncome] = useState(false);
+    const [selectedMonth, setSelectedMonth] = useState(new Date());
 
     const loadData = useCallback(async () => {
         setIsLoading(true);
         setError(null);
 
         try {
+            // Format date as YYYY-MM for API
+            const monthStr = format(selectedMonth, 'yyyy-MM');
+
             // Add timestamp to prevent browser caching
-            const response = await fetch(`/api/dashboard?t=${Date.now()}`);
+            const response = await fetch(`/api/dashboard?t=${Date.now()}&month=${monthStr}`);
             const result = await response.json();
 
             if (result.success) {
@@ -70,7 +76,7 @@ export default function DashboardPage() {
         } finally {
             setIsLoading(false);
         }
-    }, []);
+    }, [selectedMonth]);
 
     useEffect(() => {
         loadData();
@@ -78,6 +84,14 @@ export default function DashboardPage() {
 
     const handleRefresh = () => {
         loadData();
+    };
+
+    const handlePrevMonth = () => {
+        setSelectedMonth(prev => subMonths(prev, 1));
+    };
+
+    const handleNextMonth = () => {
+        setSelectedMonth(prev => addMonths(prev, 1));
     };
 
     return (
@@ -91,17 +105,43 @@ export default function DashboardPage() {
             {/* Main content */}
             <div className="flex-1 ml-16 md:ml-20 p-4 md:p-8">
                 {/* Header */}
-                <header className="glass rounded-2xl p-4 mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                    <div>
-                        <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">
-                            Dashboard Dépenses
-                        </h1>
-                        <p className="text-sm text-white/60 mt-1">
-                            {data?.config.statusMessage || 'Chargement...'}
-                        </p>
+                <header className="glass rounded-2xl p-4 mb-6 flex flex-col xl:flex-row items-center justify-between gap-4">
+                    <div className="flex items-center justify-between w-full xl:w-auto gap-4">
+                        <div>
+                            <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">
+                                Dashboard Dépenses
+                            </h1>
+                            <p className="text-sm text-white/60 mt-1">
+                                {data?.config.statusMessage || 'Chargement...'}
+                            </p>
+                        </div>
                     </div>
 
-                    <div className="flex items-center gap-3">
+                    {/* Month Selector */}
+                    <div className="flex items-center gap-2 bg-white/5 rounded-full p-1 border border-white/10">
+                        <button
+                            onClick={handlePrevMonth}
+                            className="p-2 hover:bg-white/10 rounded-full transition-colors text-white/70 hover:text-white"
+                        >
+                            <ChevronLeft className="w-5 h-5" />
+                        </button>
+
+                        <div className="flex items-center gap-2 px-2 min-w-[140px] justify-center">
+                            <Calendar className="w-4 h-4 text-purple-400" />
+                            <span className="font-medium capitalize">
+                                {format(selectedMonth, 'MMMM yyyy', { locale: fr })}
+                            </span>
+                        </div>
+
+                        <button
+                            onClick={handleNextMonth}
+                            className="p-2 hover:bg-white/10 rounded-full transition-colors text-white/70 hover:text-white"
+                        >
+                            <ChevronRight className="w-5 h-5" />
+                        </button>
+                    </div>
+
+                    <div className="flex items-center gap-3 w-full xl:w-auto justify-end">
                         {/* Add Income Button */}
                         <GlassButton
                             onClick={() => setShowAddIncome(true)}

@@ -39,13 +39,30 @@ export async function GET(request: Request) {
             }, { status: 500 });
         }
 
-        // V2 - Use same query as debug endpoint which works
-        const monthStart = '2026-01-01';
-        const monthEnd = '2026-02-01';
+        const { searchParams } = new URL(request.url);
+        const monthParam = searchParams.get('month'); // YYYY-MM
 
-        console.log('Dashboard API V2 - Date filter:', { monthStart, monthEnd });
+        let targetDate = new Date();
+        if (monthParam) {
+            const [year, month] = monthParam.split('-').map(Number);
+            if (!isNaN(year) && !isNaN(month)) {
+                targetDate = new Date(year, month - 1, 1);
+            }
+        }
 
-        // Fetch expenses for January 2026 - same as debug endpoint
+        // Calculate dynamic dates
+        // Month start: 1st of target month
+        const monthStart = targetDate.toISOString().slice(0, 8) + '01'; // YYYY-MM-01
+
+        // Month end: 1st of next month (for < comparison)
+        const nextMonth = new Date(targetDate);
+        nextMonth.setMonth(nextMonth.getMonth() + 1);
+        nextMonth.setDate(1);
+        const monthEnd = nextMonth.toISOString().slice(0, 10);
+
+        console.log('Dashboard API - Dynamic Date:', { monthStart, monthEnd, target: monthParam || 'current' });
+
+        // Fetch expenses for selected month
         const { data: monthlyExpenses, error: expenseError } = await supabase
             .from('expenses')
             .select('id, date, amount, category, created_at')
@@ -61,20 +78,20 @@ export async function GET(request: Request) {
             }, { status: 500 });
         }
 
-        console.log('Monthly expenses found:', monthlyExpenses?.length, 'First:', monthlyExpenses?.[0]);
+        console.log('Monthly expenses found:', monthlyExpenses?.length);
 
-        // Fetch income for current month - same style as expenses query
+        // Fetch income for selected month
         const { data: monthlyIncome, error: incomeError } = await supabase
             .from('income')
             .select('id, date, amount, source')
-            .gte('date', '2026-01-01')
-            .lt('date', '2026-02-01');
+            .gte('date', monthStart)
+            .lt('date', monthEnd);
 
         if (incomeError) {
             console.error('Income query error:', incomeError);
         }
 
-        // --- NEW: Calculate T-WAKE Profit for Current Month ---
+        // --- NEW: Calculate T-WAKE Profit for Selected Month ---
         let tWakeProfit = 0;
         let tWakeTxs: any[] | null = [];
         try {
@@ -86,8 +103,8 @@ export async function GET(request: Request) {
                     description,
                     product:t_wake_products (selling_price, unit_cost)
                 `)
-                .gte('date', '2026-01-01')
-                .lt('date', '2026-02-01');
+                .gte('date', monthStart)
+                .lt('date', monthEnd);
 
             tWakeTxs = result.data;
             const tWakeError = result.error;
@@ -137,9 +154,9 @@ export async function GET(request: Request) {
             .map(([name, value]) => ({ name, value }))
             .sort((a, b) => b.value - a.value);
 
-        // Get yearly data for time series
-        const yearStart = '2026-01-01';
-        const yearEnd = '2026-12-31';
+        // Get yearly data for time series (Current Year of the target date)
+        const yearStart = `${targetDate.getFullYear()}-01-01`;
+        const yearEnd = `${targetDate.getFullYear()}-12-31`;
 
         const { data: yearlyExpenses } = await supabase
             .from('expenses')
