@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Plus, RefreshCw, TrendingUp, TrendingDown, Wallet, ArrowUpRight, ArrowDownLeft, ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
 import { Sidebar, type NavSection } from '@/components/layout';
 import {
@@ -89,6 +89,24 @@ export default function DashboardPage() {
     useEffect(() => {
         loadData();
     }, [loadData]);
+
+    const filteredTransactions = useMemo(() => {
+        if (!data) return [];
+        return data.recentTransactions.filter(tx => {
+            const matchesSearch = !filters.searchQuery ||
+                (tx.description || '').toLowerCase().includes(filters.searchQuery.toLowerCase()) ||
+                tx.category.toLowerCase().includes(filters.searchQuery.toLowerCase());
+
+            const matchesCategory = filters.categories.length === 0 ||
+                filters.categories.includes(tx.category);
+
+            const txDate = new Date(tx.date);
+            const matchesStart = !filters.dateRange.start || txDate >= filters.dateRange.start;
+            const matchesEnd = !filters.dateRange.end || txDate <= filters.dateRange.end;
+
+            return matchesSearch && matchesCategory && matchesStart && matchesEnd;
+        });
+    }, [data, filters]);
 
     const handleRefresh = () => {
         loadData();
@@ -325,11 +343,28 @@ export default function DashboardPage() {
 
                         {/* Filters Section */}
                         {activeSection === 'filters' && (
-                            <Filters
-                                categories={data?.categoryData.map(c => c.name) || []}
-                                filters={filters}
-                                onFiltersChange={setFilters}
-                            />
+                            <div className="space-y-6">
+                                <Filters
+                                    categories={data?.categoryData.map(c => c.name) || []}
+                                    filters={filters}
+                                    onFiltersChange={setFilters}
+                                />
+                                <DataTable
+                                    title={`Résultats (${filteredTransactions.length})`}
+                                    data={filteredTransactions.map(t => ({
+                                        ...t,
+                                        date: new Date(t.date).toLocaleDateString('fr-FR'),
+                                        amount: t.amount // Keep number for sorting, format handles display
+                                    }))}
+                                    columns={[
+                                        { key: 'date', label: 'Date', sortable: true },
+                                        { key: 'category', label: 'Catégorie', sortable: true },
+                                        { key: 'description', label: 'Description', sortable: true },
+                                        { key: 'amount', label: 'Montant', sortable: true, format: 'currency', align: 'right' },
+                                        { key: 'type', label: 'Type', sortable: true }
+                                    ]}
+                                />
+                            </div>
                         )}
 
                         {/* Settings Section */}
