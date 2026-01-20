@@ -11,7 +11,9 @@ import {
     AddExpenseModal,
     AddIncomeModal,
     ExpenseHistory,
-    TWake
+    TWake,
+    DataTable,
+    Filters
 } from '@/components/dashboard';
 import { GlassButton, GlassCard } from '@/components/ui/GlassComponents';
 import { formatCurrency } from '@/lib/utils';
@@ -294,6 +296,30 @@ export default function DashboardPage() {
                                     </GlassCard>
                                 </div>
                             </div>
+                        )}
+
+                        {/* Table Section */}
+                        {activeSection === 'table' && data && (
+                            <DataTable
+                                title="Transactions du mois"
+                                data={data.recentTransactions.map(t => ({
+                                    ...t,
+                                    date: new Date(t.date).toLocaleDateString('fr-FR'),
+                                    amount: t.amount // Keep number for sorting, format handles display
+                                }))}
+                                columns={[
+                                    { key: 'date', label: 'Date', sortable: true },
+                                    { key: 'category', label: 'Catégorie', sortable: true },
+                                    { key: 'description', label: 'Description', sortable: true },
+                                    { key: 'amount', label: 'Montant', sortable: true, format: 'currency', align: 'right' },
+                                    { key: 'type', label: 'Type', sortable: true }
+                                ]}
+                            />
+                        )}
+
+                        {/* Filters Section */}
+                        {activeSection === 'filters' && (
+                            <Filters />
                         )}
 
                         {/* Settings Section */}

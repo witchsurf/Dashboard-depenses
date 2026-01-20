@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { syncIncomeToSheet } from '@/lib/sheets';
 
 export const dynamic = 'force-dynamic';
 
@@ -42,9 +43,27 @@ export async function POST(request: Request) {
 
         if (error) throw error;
 
+        // Sync to Google Sheets
+        let sheetSynced = false;
+        try {
+            const dateObj = new Date(date);
+            const sheetResult = await syncIncomeToSheet(
+                source,
+                dateObj.getMonth(),
+                dateObj.getFullYear()
+            );
+            sheetSynced = sheetResult.success;
+            if (!sheetResult.success) {
+                console.warn('Google Sheet sync failed:', sheetResult.error);
+            }
+        } catch (syncErr) {
+            console.error('Google Sheet sync exception:', syncErr);
+        }
+
         return NextResponse.json({
             success: true,
             data,
+            sheetSynced
         });
 
     } catch (error) {

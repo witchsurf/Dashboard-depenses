@@ -244,6 +244,16 @@ export async function fetchSheetData(tabName?: string): Promise<SheetData> {
  * Maps category/subcategory to the row number in the sheet
  */
 const CATEGORY_ROW_MAP: Record<string, number> = {
+    // REVENUS (rows 13-21)
+    'Salaire': 13,
+    'Freelance': 13,
+    'Investissements': 16,
+    'Dividendes': 16,
+    'Location': 17,
+    'Bonus': 13,
+    'Autres': 21,
+    'Autre': 21,
+
     // Maison (rows 24-37 in Google Sheet)
     'Maison/Loyers/emprunt': 25,
     'Maison/Électricité/gaz': 26,
@@ -500,6 +510,103 @@ export async function syncCategoryToSheet(
         };
     }
 }
+
+/**
+ * Sync income source total to Google Sheet
+ */
+export async function syncIncomeToSheet(
+    source: string,
+    month: number, // 0-11
+    year: number
+): Promise<{ success: boolean; error?: string; total?: number }> {
+    try {
+        const config = getSheetsConfig();
+        if (!config) {
+            return { success: false, error: 'Google Sheets not configured' };
+        }
+
+        const row = CATEGORY_ROW_MAP[source];
+
+        if (!row) {
+            console.log(`No row mapping found for income source ${source}, skipping Google Sheets sync`);
+            return { success: true }; // Not an error
+        }
+
+        const column = MONTH_COLUMNS[month];
+        const cellRange = `Budget!${column}${row}`;
+
+        // Calculate total for this source/month
+        const monthStart = `${year}-${String(month + 1).padStart(2, '0')}-01`;
+        const nextMonth = month === 11 ? `${year + 1}-01-01` : `${year}-${String(month + 2).padStart(2, '0')}-01`;
+
+        // Fetch from Supabase
+        const { createClient } = await import('@supabase/supabase-js');
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+        const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+        if (!supabaseUrl || !supabaseKey) {
+            return { success: false, error: 'Supabase not configured' };
+        }
+
+        const supabase = createClient(supabaseUrl, supabaseKey);
+
+        const { data: income, error: dbError } = await supabase
+            .from('income')
+            .select('amount')
+            .eq('source', source)
+            .gte('date', monthStart)
+            .lt('date', nextMonth);
+
+        if (dbError) {
+            return { success: false, error: dbError.message };
+        }
+
+        // Calculate total and formatted value
+        let cellValue: string | number;
+        const amounts = income?.map(i => Number(i.amount)) || [];
+
+        if (amounts.length === 0) {
+            cellValue = 0;
+        } else if (amounts.length === 1) {
+            cellValue = amounts[0];
+        } else {
+            cellValue = '=' + amounts.join('+');
+        }
+
+        const total = amounts.reduce((sum, a) => sum + a, 0);
+
+        // Update Sheet
+        const accessToken = await getAccessToken(config);
+
+        const updateResponse = await fetch(
+            `https://sheets.googleapis.com/v4/spreadsheets/${config.sheetId}/values/${encodeURIComponent(cellRange)}?valueInputOption=USER_ENTERED`,
+            {
+                method: 'PUT',
+                headers: {
+                    Authorization: `Bearer ${accessToken}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    values: [[cellValue]],
+                }),
+            }
+        );
+
+        if (!updateResponse.ok) {
+            const error = await updateResponse.text();
+            console.error('Failed to update Google Sheet:', error);
+            return { success: false, error };
+        }
+
+        console.log(`Synced Income to Google Sheet: ${cellRange} = ${total}`);
+        return { success: true, total };
+
+    } catch (error) {
+        console.error('Error syncing income to Google Sheet:', error);
+        return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    }
+}
+
 
 /**
  * Legacy function - now calls syncCategoryToSheet
