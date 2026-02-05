@@ -163,8 +163,8 @@ export function DataTable({
                     <div key={row.id} className="bg-white/5 rounded-lg p-4 space-y-3">
                         <div className="flex justify-between items-start">
                             <div className="space-y-1">
-                                <p className="font-semibold text-white">{row.category}</p>
-                                <p className="text-sm text-white/60">{new Date(row.date).toLocaleDateString('fr-FR')}</p>
+                                <p className="font-semibold text-white">{String(row.category)}</p>
+                                <p className="text-sm text-white/60">{row.date}</p>
                             </div>
                             <span className="font-bold text-lg whitespace-nowrap">
                                 {formatCurrency(Number(row.amount))}
