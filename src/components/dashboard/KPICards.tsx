@@ -51,7 +51,7 @@ function KPICard({ kpi, index = 0 }: KPICardProps) {
 
     return (
         <GlassCard
-            className="relative overflow-hidden"
+            className="relative overflow-hidden min-w-0" // Added min-w-0
             style={{ animationDelay: `${index * 100}ms` }}
         >
             {/* Accent color bar */}
@@ -61,9 +61,9 @@ function KPICard({ kpi, index = 0 }: KPICardProps) {
             />
 
             <div className="pt-2">
-                <p className="text-sm text-white/60 mb-1 truncate">{kpi.label}</p>
+                <p className="text-sm text-white/60 mb-1 truncate w-full">{kpi.label}</p>
                 <p
-                    className="text-xl md:text-2xl font-bold truncate"
+                    className="text-xl md:text-2xl font-bold truncate w-full"
                     style={{ color: kpi.color || 'inherit' }}
                 >
                     {formattedValue}
@@ -71,8 +71,8 @@ function KPICard({ kpi, index = 0 }: KPICardProps) {
 
                 {kpi.trend && (
                     <div className={`flex items-center gap-1 mt-2 text-sm ${trendColor}`}>
-                        {trendIcon}
-                        {changePercent && <span>{changePercent}%</span>}
+                        <div className="shrink-0">{trendIcon}</div>
+                        {changePercent && <span className="truncate">{changePercent}%</span>}
                     </div>
                 )}
             </div>

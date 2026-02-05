@@ -54,12 +54,12 @@ export function CategoryBarChart({
     return (
         <GlassCard>
             <h3 className="text-lg font-semibold mb-4">{title}</h3>
-            <div className="h-[300px] md:h-[350px]">
+            <div className="h-[300px] md:h-[350px] w-full min-w-0">
                 <ResponsiveContainer width="100%" height="100%">
                     <BarChart
                         data={sortedData}
                         layout="vertical"
-                        margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                        margin={{ top: 5, right: 10, left: -20, bottom: 5 }} // Reduced margins
                     >
                         <CartesianGrid
                             strokeDasharray="3 3"
@@ -70,17 +70,17 @@ export function CategoryBarChart({
                         <XAxis
                             type="number"
                             stroke="rgba(255,255,255,0.5)"
-                            fontSize={11}
+                            fontSize={10} // Smaller font
                             tickLine={false}
-                            tickFormatter={(value) => `${(value / 1000000).toFixed(1)}M`}
+                            tickFormatter={(value) => `${(value / 1000).toFixed(0)}k`} // Compact formatting
                         />
                         <YAxis
                             type="category"
                             dataKey="name"
                             stroke="rgba(255,255,255,0.5)"
-                            fontSize={11}
+                            fontSize={10} // Smaller font
                             tickLine={false}
-                            width={100}
+                            width={80} // Reduced width
                             tick={{ fill: 'rgba(255,255,255,0.7)' }}
                         />
                         <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255,255,255,0.05)' }} />

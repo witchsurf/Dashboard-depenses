@@ -96,7 +96,7 @@ export function DonutChart({
     return (
         <GlassCard>
             <h3 className="text-lg font-semibold mb-4">{title}</h3>
-            <div className="h-[300px] md:h-[350px]">
+            <div className="h-[300px] md:h-[350px] w-full min-w-0">
                 <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                         <Pie
