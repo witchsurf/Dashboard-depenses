@@ -65,7 +65,7 @@ export async function GET(request: Request) {
         // Fetch expenses for selected month
         const { data: monthlyExpenses, error: expenseError } = await supabase
             .from('expenses')
-            .select('id, date, amount, category, created_at')
+            .select('id, date, amount, category, description, created_at')
             .gte('date', monthStart)
             .lt('date', monthEnd);
 
@@ -83,7 +83,7 @@ export async function GET(request: Request) {
         // Fetch income for selected month
         const { data: monthlyIncome, error: incomeError } = await supabase
             .from('income')
-            .select('id, date, amount, source')
+            .select('id, date, amount, source, description, created_at')
             .gte('date', monthStart)
             .lt('date', monthEnd);
 
@@ -255,40 +255,27 @@ export async function GET(request: Request) {
             };
         });
 
-        // Get recent transactions (Expenses + Income)
-        // Fetch more items (50) to ensure we get a good mix if one category has many recent entries
-        const { data: recentExpenses } = await supabase
-            .from('expenses')
-            .select('*')
-            .order('created_at', { ascending: false })
-            .limit(50);
-
-        const { data: recentIncome } = await supabase
-            .from('income')
-            .select('*')
-            .neq('source', 'T-wake/LP') // Exclude legacy static entry to avoid duplication in list
-            .order('created_at', { ascending: false })
-            .limit(50);
-
-        // Fetch recent T-WAKE sales for transaction list
-        const { data: recentTWake } = await supabase
-            .from('t_wake_transactions')
-            .select(`
-                *,
-                product:t_wake_products (name, selling_price, unit_cost)
-            `)
-            .order('created_at', { ascending: false })
-            .limit(50);
-
-        // Merge and Sort
+        // Merge and Sort all transactions for the month
         const mixedTransactions = [
-            ...(recentExpenses?.map(e => ({ ...e, type: 'expense' })) || []),
-            ...(recentIncome?.map(i => ({
-                ...i,
-                type: 'income',
-                category: i.source // Map source to category
+            ...(monthlyExpenses?.map(e => ({
+                id: e.id,
+                date: e.date,
+                amount: e.amount,
+                category: e.category,
+                description: e.description,
+                created_at: e.created_at,
+                type: 'expense'
             })) || []),
-            ...(recentTWake?.map((t: any) => {
+            ...(monthlyIncome?.map(i => ({
+                id: i.id,
+                date: i.date,
+                amount: i.amount,
+                category: i.source, // Map source to category
+                description: i.description,
+                created_at: i.created_at || i.date, // Fallback if created_at missing
+                type: 'income'
+            })) || []),
+            ...(tWakeTxs?.map((t: any) => {
                 // Calculate margin for "Amount" to match revenue logic
                 const margin = t.product ? (t.product.selling_price - t.product.unit_cost) * t.quantity : 0;
                 return {
@@ -297,18 +284,21 @@ export async function GET(request: Request) {
                     amount: margin,
                     category: 'Vente T-WAKE',
                     description: `${t.product?.name || 'Produit'} (x${t.quantity})`,
-                    created_at: t.created_at,
+                    created_at: t.created_at || t.date,
                     type: 'income'
                 };
             }) || [])
-        ].sort((a, b) => {
+        ].filter(tx => {
+            // Filter out static T-Wake/LP income to avoid duplication with real T-Wake transactions
+            if (tx.type === 'income' && tx.category === 'T-wake/LP') return false;
+            return true;
+        }).sort((a, b) => {
             // Sort by date (business date) first
             const dateDiff = new Date(b.date).getTime() - new Date(a.date).getTime();
             if (dateDiff !== 0) return dateDiff;
             // Then by creation time (newest created first)
             return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-        })
-            .slice(0, 10);
+        });
 
 
 
