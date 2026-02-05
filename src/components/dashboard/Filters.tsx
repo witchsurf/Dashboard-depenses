@@ -92,7 +92,7 @@ export function Filters({ categories, filters, onFiltersChange }: FiltersProps) 
                             <Calendar className="w-4 h-4" />
                             Période
                         </label>
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <select
                                 className="glass-select text-sm"
                                 value={filters.dateRange.start?.getMonth() ?? ''}

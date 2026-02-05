@@ -176,41 +176,42 @@ export function TWake({ onSync }: TWakeProps) {
     }, { ca: 0, profit: 0 });
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 max-w-[100vw] overflow-hidden">
             {/* Header Card - Kept as Glass because it works */}
             <GlassCard padding="none" className="">
                 <div className="p-4 sm:p-6">
-                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                    <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
                         <div>
                             <h2 className="text-xl font-bold text-white">Cakes & Biscuits (2026)</h2>
                             <p className="text-white/60 text-sm">Gestion des ventes et synchronisation</p>
                         </div>
 
-                        <div className="flex gap-2">
+                        <div className="flex flex-wrap gap-2 w-full lg:w-auto">
                             <GlassButton
                                 onClick={() => setShowAddSale(true)}
                                 variant="primary"
-                                className="mr-2 bg-emerald-500/80 hover:bg-emerald-500"
+                                className="bg-emerald-500/80 hover:bg-emerald-500 flex-1 sm:flex-none justify-center"
                             >
                                 <div className="flex items-center gap-2">
                                     <Plus className="w-4 h-4" />
-                                    <span className="hidden sm:inline">Vente</span>
+                                    <span>Vente</span>
                                 </div>
                             </GlassButton>
                             <GlassButton
                                 onClick={() => setShowAddProduct(true)}
                                 variant="default"
-                                className="mr-2"
+                                className="flex-1 sm:flex-none justify-center"
                             >
                                 <div className="flex items-center gap-2">
                                     <Plus className="w-4 h-4" />
-                                    <span className="hidden sm:inline">Produit</span>
+                                    <span>Produit</span>
                                 </div>
                             </GlassButton>
                             <GlassButton
                                 onClick={handleSave}
                                 disabled={isSaving || !hasUnsavedChanges}
                                 variant="primary"
+                                className="flex-1 sm:flex-none justify-center"
                             >
                                 <div className="flex items-center gap-2">
                                     <Save className="w-4 h-4" />
@@ -221,6 +222,7 @@ export function TWake({ onSync }: TWakeProps) {
                                 onClick={handleSyncToSheets}
                                 disabled={isSyncing}
                                 variant="default"
+                                className="flex-1 sm:flex-none justify-center"
                             >
                                 <div className="flex items-center gap-2">
                                     <UploadCloud className="w-4 h-4" />
@@ -286,11 +288,11 @@ export function TWake({ onSync }: TWakeProps) {
                     <h3 className="text-lg font-bold text-white mb-4">Tableau des Ventes</h3>
                 </div>
 
-                <div className="w-full overflow-x-auto pb-4 relative z-0" style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-x', overscrollBehaviorX: 'contain' }}>
+                <div className="w-full overflow-x-auto pb-4 relative z-0 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent" style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-x', overscrollBehaviorX: 'contain' }}>
                     <table className="w-full min-w-[1200px] text-sm text-left border-separate border-spacing-0">
                         <thead className="text-xs uppercase text-white/60 bg-white/5">
                             <tr>
-                                <th className="px-3 py-3 rounded-tl-lg border-r border-white/10 w-[140px] min-w-[140px]">Produit</th>
+                                <th className="px-3 py-3 rounded-tl-lg border-r border-white/10 w-[140px] min-w-[140px] sticky left-0 bg-[#16162a] z-10 shadow-lg">Produit</th>
                                 <th className="px-3 py-3 text-right whitespace-nowrap w-[100px]">Prix</th>
                                 <th className="px-3 py-3 text-right whitespace-nowrap w-[100px]">Marge</th>
                                 {months.map(m => (
@@ -307,7 +309,7 @@ export function TWake({ onSync }: TWakeProps) {
                                 const margin = p.selling_price - p.unit_cost;
                                 return (
                                     <tr key={p.id} className="border-b border-white/5 hover:bg-white/5 transition-colors group">
-                                        <td className="px-3 py-2 font-medium border-r border-white/10 group-hover:bg-[#2a2655]">{p.name}</td>
+                                        <td className="px-3 py-2 font-medium border-r border-white/10 group-hover:bg-[#2a2655] sticky left-0 bg-[#0f0c29] z-10 shadow-[2px_0_5px_rgba(0,0,0,0.3)]">{p.name}</td>
                                         <td className="px-3 py-2 text-right opacity-70 whitespace-nowrap">{formatCurrency(p.selling_price)}</td>
                                         <td className="px-3 py-2 text-right text-emerald-400 whitespace-nowrap">{formatCurrency(margin)}</td>
 
@@ -319,7 +321,7 @@ export function TWake({ onSync }: TWakeProps) {
                                                         type="number"
                                                         value={qty || ''}
                                                         onChange={(e) => handleQuantityChange(p.id, idx, e.target.value)}
-                                                        className="w-full bg-transparent border-b border-white/10 focus:border-purple-400 text-center text-white focus:outline-none p-1 transition-colors text-base"
+                                                        className="w-full bg-transparent border-b border-white/10 focus:border-purple-400 text-center text-white focus:outline-none p-2 transition-colors text-base min-h-[44px]"
                                                         placeholder="-"
                                                     />
                                                 </td>

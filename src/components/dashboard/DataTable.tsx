@@ -156,7 +156,7 @@ export function DataTable({
 
             {/* Table */}
             <div className="overflow-x-auto">
-                <table className="data-table">
+                <table className="data-table min-w-[800px]">
                     <thead>
                         <tr>
                             {columns.map((col) => (
@@ -210,8 +210,8 @@ export function DataTable({
             </div>
 
             {/* Footer with total and pagination */}
-            <div className="p-4 border-t border-white/10 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
-                <div>
+            <div className="p-4 border-t border-white/10 flex flex-col md:flex-row gap-4 items-center justify-between">
+                <div className="text-center md:text-left">
                     <p className="text-sm text-white/60">
                         {sortedData.length} résultat{sortedData.length > 1 ? 's' : ''}
                         {searchQuery && ` pour "${searchQuery}"`}
@@ -225,7 +225,7 @@ export function DataTable({
                     )}
                 </div>
                 {totalPages > 1 && (
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap justify-center items-center gap-2">
                         <GlassButton
                             size="sm"
                             onClick={() => setCurrentPage(1)}
@@ -242,7 +242,7 @@ export function DataTable({
                         >
                             <ChevronLeft className="w-4 h-4" />
                         </GlassButton>
-                        <span className="px-3 text-sm">
+                        <span className="px-3 text-sm whitespace-nowrap">
                             Page {currentPage} / {totalPages}
                         </span>
                         <GlassButton
