@@ -131,7 +131,7 @@ export default function DashboardPage() {
             />
 
             {/* Main content */}
-            <div className="flex-1 ml-16 md:ml-20 p-4 md:p-8">
+            <div className="flex-1 ml-0 md:ml-20 p-4 md:p-8 max-w-full overflow-x-hidden">
                 {/* Header */}
                 <header className="glass rounded-2xl p-4 mb-6 flex flex-col xl:flex-row items-center justify-between gap-4">
                     <div className="flex items-center justify-between w-full xl:w-auto gap-4">
