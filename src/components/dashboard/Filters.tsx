@@ -41,12 +41,6 @@ export function Filters({ categories, filters, onFiltersChange }: FiltersProps) 
         filters.dateRange.start ||
         filters.dateRange.end;
 
-    // Month selector for date range
-    const months = FRENCH_MONTHS_FULL.map((name, index) => ({
-        value: index,
-        label: name,
-    }));
-
     return (
         <GlassCard padding="none" className="overflow-hidden">
             {/* Header - always visible */}
@@ -93,44 +87,32 @@ export function Filters({ categories, filters, onFiltersChange }: FiltersProps) 
                             Période
                         </label>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <select
-                                className="glass-select text-sm"
-                                value={filters.dateRange.start?.getMonth() ?? ''}
-                                onChange={(e) => {
-                                    const month = parseInt(e.target.value);
-                                    if (!isNaN(month)) {
-                                        const date = new Date(2024, month, 1);
-                                        updateFilter('dateRange', { ...filters.dateRange, start: date });
+                            <GlassInput
+                                type="date"
+                                className="w-full text-sm"
+                                value={filters.dateRange.start ? filters.dateRange.start.toISOString().split('T')[0] : ''}
+                                onChange={(value) => {
+                                    if (value) {
+                                        updateFilter('dateRange', { ...filters.dateRange, start: new Date(value) });
                                     } else {
                                         updateFilter('dateRange', { ...filters.dateRange, start: null });
                                     }
                                 }}
-                                aria-label="Mois de début"
-                            >
-                                <option value="">Début</option>
-                                {months.map((m) => (
-                                    <option key={m.value} value={m.value}>{m.label}</option>
-                                ))}
-                            </select>
-                            <select
-                                className="glass-select text-sm"
-                                value={filters.dateRange.end?.getMonth() ?? ''}
-                                onChange={(e) => {
-                                    const month = parseInt(e.target.value);
-                                    if (!isNaN(month)) {
-                                        const date = new Date(2024, month + 1, 0);
-                                        updateFilter('dateRange', { ...filters.dateRange, end: date });
+                                aria-label="Date de début"
+                            />
+                            <GlassInput
+                                type="date"
+                                className="w-full text-sm"
+                                value={filters.dateRange.end ? filters.dateRange.end.toISOString().split('T')[0] : ''}
+                                onChange={(value) => {
+                                    if (value) {
+                                        updateFilter('dateRange', { ...filters.dateRange, end: new Date(value) });
                                     } else {
                                         updateFilter('dateRange', { ...filters.dateRange, end: null });
                                     }
                                 }}
-                                aria-label="Mois de fin"
-                            >
-                                <option value="">Fin</option>
-                                {months.map((m) => (
-                                    <option key={m.value} value={m.value}>{m.label}</option>
-                                ))}
-                            </select>
+                                aria-label="Date de fin"
+                            />
                         </div>
                     </div>
 
