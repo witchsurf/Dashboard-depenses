@@ -103,8 +103,21 @@ export default function DashboardPage() {
                 filters.categories.includes(tx.category);
 
             const txDate = new Date(tx.date);
-            const matchesStart = !filters.dateRange.start || txDate >= filters.dateRange.start;
-            const matchesEnd = !filters.dateRange.end || txDate <= filters.dateRange.end;
+            txDate.setHours(0, 0, 0, 0);
+
+            let matchesStart = true;
+            if (filters.dateRange.start) {
+                const startDate = new Date(filters.dateRange.start);
+                startDate.setHours(0, 0, 0, 0);
+                matchesStart = txDate >= startDate;
+            }
+
+            let matchesEnd = true;
+            if (filters.dateRange.end) {
+                const endDate = new Date(filters.dateRange.end);
+                endDate.setHours(0, 0, 0, 0);
+                matchesEnd = txDate <= endDate;
+            }
 
             return matchesSearch && matchesCategory && matchesStart && matchesEnd;
         });
