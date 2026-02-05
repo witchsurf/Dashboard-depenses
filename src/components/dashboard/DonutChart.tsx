@@ -20,12 +20,14 @@ interface DonutChartProps {
     data: DonutData[];
     title?: string;
     showLegend?: boolean;
+    onCategoryClick?: (category: string) => void;
 }
 
 export function DonutChart({
     data,
     title = 'Distribution',
-    showLegend = true
+    showLegend = true,
+    onCategoryClick,
 }: DonutChartProps) {
     const total = data.reduce((sum, d) => sum + d.value, 0);
 
@@ -108,12 +110,14 @@ export function DonutChart({
                             paddingAngle={2}
                             dataKey="value"
                         >
-                            {data.map((_, index) => (
+                            {data.map((entry, index) => (
                                 <Cell
                                     key={`cell-${index}`}
                                     fill={getChartColor(index)}
                                     stroke="rgba(0,0,0,0.2)"
                                     strokeWidth={1}
+                                    style={{ cursor: onCategoryClick ? 'pointer' : 'default' }}
+                                    onClick={() => onCategoryClick?.(entry.name)}
                                 />
                             ))}
                         </Pie>

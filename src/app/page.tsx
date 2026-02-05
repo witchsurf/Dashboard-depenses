@@ -13,7 +13,8 @@ import {
     ExpenseHistory,
     TWake,
     DataTable,
-    Filters
+    Filters,
+    CategoryDetailModal,
 } from '@/components/dashboard';
 import { GlassButton, GlassCard } from '@/components/ui/GlassComponents';
 import { formatCurrency } from '@/lib/utils';
@@ -60,6 +61,7 @@ export default function DashboardPage() {
         categories: [],
         searchQuery: '',
     });
+    const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
     const loadData = useCallback(async () => {
         setIsLoading(true);
@@ -243,6 +245,7 @@ export default function DashboardPage() {
                                             <DonutChart
                                                 data={data.categoryData}
                                                 title=""
+                                                onCategoryClick={setSelectedCategory}
                                             />
                                         </GlassCard>
                                     )}
@@ -310,12 +313,14 @@ export default function DashboardPage() {
                                         <CategoryBarChart
                                             data={data.categoryData}
                                             title="Dépenses par catégorie"
+                                            onCategoryClick={setSelectedCategory}
                                         />
                                     </GlassCard>
                                     <GlassCard>
                                         <DonutChart
                                             data={data.categoryData}
                                             title="Répartition"
+                                            onCategoryClick={setSelectedCategory}
                                         />
                                     </GlassCard>
                                 </div>
@@ -411,6 +416,12 @@ export default function DashboardPage() {
                     setShowAddIncome(false);
                     loadData();
                 }}
+            />
+            <CategoryDetailModal
+                isOpen={!!selectedCategory}
+                onClose={() => setSelectedCategory(null)}
+                category={selectedCategory || ''}
+                month={selectedMonth}
             />
         </main>
     );

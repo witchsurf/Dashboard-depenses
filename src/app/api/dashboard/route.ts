@@ -122,6 +122,66 @@ export async function GET(request: Request) {
         }
         // -----------------------------------------------------
 
+        // --- CARRYOVER: Calculate Previous Month Balance ---
+        let carryoverBalance = 0;
+        try {
+            // Calculate previous month dates
+            const prevMonth = new Date(targetDate);
+            prevMonth.setMonth(prevMonth.getMonth() - 1);
+            prevMonth.setDate(1);
+            const prevMonthStart = prevMonth.toISOString().slice(0, 10);
+            const prevMonthEnd = monthStart; // Current month start is prev month end
+
+            console.log('Dashboard API - Previous Month Range:', { prevMonthStart, prevMonthEnd });
+
+            // Fetch previous month expenses
+            const { data: prevExpenses } = await supabase
+                .from('expenses')
+                .select('amount')
+                .gte('date', prevMonthStart)
+                .lt('date', prevMonthEnd);
+
+            // Fetch previous month income
+            const { data: prevIncome } = await supabase
+                .from('income')
+                .select('amount, source')
+                .gte('date', prevMonthStart)
+                .lt('date', prevMonthEnd);
+
+            // Fetch previous month T-WAKE profit
+            let prevTWakeProfit = 0;
+            const { data: prevTWakeTxs } = await supabase
+                .from('t_wake_transactions')
+                .select(`
+                    quantity,
+                    product:t_wake_products (selling_price, unit_cost)
+                `)
+                .gte('date', prevMonthStart)
+                .lt('date', prevMonthEnd);
+
+            if (prevTWakeTxs) {
+                prevTWakeProfit = prevTWakeTxs.reduce((sum, t: any) => {
+                    if (!t.product) return sum;
+                    const margin = t.product.selling_price - t.product.unit_cost;
+                    return sum + (Number(t.quantity) * margin);
+                }, 0);
+            }
+
+            // Calculate totals for previous month
+            const prevTotalExpenses = prevExpenses?.reduce((sum, e) => sum + Number(e.amount), 0) || 0;
+            const prevBaseIncome = prevIncome?.reduce((sum, i) => {
+                if (i.source === 'T-wake/LP') return sum; // Skip static import
+                return sum + Number(i.amount);
+            }, 0) || 0;
+            const prevTotalIncome = prevBaseIncome + prevTWakeProfit;
+
+            carryoverBalance = prevTotalIncome - prevTotalExpenses;
+            console.log('Dashboard API - Previous Month Balance:', carryoverBalance);
+        } catch (carryoverError) {
+            console.error('Failed to calculate carryover balance:', carryoverError);
+        }
+        // ---------------------------------------------------
+
         console.log('Monthly income found:', monthlyIncome?.length);
 
         // Calculate KPIs
@@ -135,7 +195,8 @@ export async function GET(request: Request) {
         }, 0) || 0;
 
         const totalIncome = baseIncome + tWakeProfit; // Add dynamic T-WAKE profit
-        const netBalance = totalIncome - totalExpenses;
+        const monthBalance = totalIncome - totalExpenses; // Balance du mois uniquement
+        const netBalance = carryoverBalance + monthBalance; // Balance avec report
 
         // Debug - count items
         const expenseCount = monthlyExpenses?.length || 0;
@@ -267,6 +328,13 @@ export async function GET(request: Request) {
                     format: 'currency',
                     trend: 'stable',
                     color: '#10B981',
+                },
+                {
+                    label: 'Report',
+                    value: carryoverBalance,
+                    format: 'currency',
+                    trend: carryoverBalance >= 0 ? 'up' : 'down',
+                    color: carryoverBalance >= 0 ? '#06B6D4' : '#F59E0B',
                 },
                 {
                     label: 'Balance',

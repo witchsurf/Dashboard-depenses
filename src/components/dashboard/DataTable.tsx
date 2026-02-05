@@ -209,13 +209,22 @@ export function DataTable({
                 </table>
             </div>
 
-            {/* Pagination */}
-            {totalPages > 1 && (
-                <div className="p-4 border-t border-white/10 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+            {/* Footer with total and pagination */}
+            <div className="p-4 border-t border-white/10 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+                <div>
                     <p className="text-sm text-white/60">
                         {sortedData.length} résultat{sortedData.length > 1 ? 's' : ''}
                         {searchQuery && ` pour "${searchQuery}"`}
                     </p>
+                    {sortedData.length > 0 && columns.some(c => c.key === 'amount') && (
+                        <p className="text-lg font-bold text-purple-400 mt-1">
+                            Total: {formatCurrency(
+                                sortedData.reduce((sum, row) => sum + (Number(row.amount) || 0), 0)
+                            )}
+                        </p>
+                    )}
+                </div>
+                {totalPages > 1 && (
                     <div className="flex items-center gap-2">
                         <GlassButton
                             size="sm"
@@ -253,8 +262,8 @@ export function DataTable({
                             <ChevronsRight className="w-4 h-4" />
                         </GlassButton>
                     </div>
-                </div>
-            )}
+                )}
+            </div>
         </GlassCard>
     );
 }

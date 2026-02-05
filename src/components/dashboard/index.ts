@@ -5,6 +5,7 @@ export { CategoryBarChart } from './CategoryBarChart';
 export { DonutChart } from './DonutChart';
 export { DataTable } from './DataTable';
 export { Filters } from './Filters';
+export { CategoryDetailModal } from './CategoryDetailModal';
 export { ColumnMappingUI } from './ColumnMapping';
 export { ConfigWizard } from './ConfigWizard';
 export { AddExpenseModal } from './AddExpenseModal';

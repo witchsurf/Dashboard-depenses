@@ -21,11 +21,13 @@ interface CategoryData {
 interface CategoryBarChartProps {
     data: CategoryData[];
     title?: string;
+    onCategoryClick?: (category: string) => void;
 }
 
 export function CategoryBarChart({
     data,
-    title = 'Répartition par Catégorie'
+    title = 'Répartition par Catégorie',
+    onCategoryClick,
 }: CategoryBarChartProps) {
     // Sort by value descending
     const sortedData = [...data].sort((a, b) => b.value - a.value);
@@ -86,6 +88,8 @@ export function CategoryBarChart({
                             dataKey="value"
                             radius={[0, 4, 4, 0]}
                             maxBarSize={40}
+                            style={{ cursor: onCategoryClick ? 'pointer' : 'default' }}
+                            onClick={(data) => onCategoryClick?.(data.name)}
                         >
                             {sortedData.map((_, index) => (
                                 <Cell key={`cell-${index}`} fill={getChartColor(index)} />
