@@ -54,7 +54,12 @@ export function Filters({ categories, filters, onFiltersChange }: FiltersProps) 
                     <span className="font-medium">Filtres</span>
                     {hasActiveFilters && (
                         <span className="px-2 py-0.5 text-xs bg-purple-500/30 text-purple-300 rounded-full">
-                            {filters.categories.length + (filters.searchQuery ? 1 : 0)} actif(s)
+                            {
+                                filters.categories.length +
+                                (filters.searchQuery ? 1 : 0) +
+                                (filters.dateRange.start ? 1 : 0) +
+                                (filters.dateRange.end ? 1 : 0)
+                            } actif(s)
                         </span>
                     )}
                 </div>
