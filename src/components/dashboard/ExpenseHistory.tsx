@@ -143,21 +143,21 @@ export function ExpenseHistory({ onRefresh }: ExpenseHistoryProps) {
     return (
         <GlassCard>
             {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
                 <div className="flex items-center gap-3">
                     <div className="p-2 rounded-lg bg-gradient-to-br from-cyan-500 to-purple-500">
                         <Calendar className="w-5 h-5" />
                     </div>
-                    <h2 className="text-xl font-bold">Historique des Dépenses</h2>
+                    <h2 className="text-xl font-bold">Historique</h2>
                 </div>
 
                 {/* View mode toggle */}
-                <div className="flex gap-1 bg-white/5 rounded-lg p-1">
+                <div className="flex gap-1 bg-white/5 rounded-lg p-1 self-start md:self-auto overflow-x-auto max-w-full">
                     {(['day', 'week', 'month'] as const).map((mode) => (
                         <button
                             key={mode}
                             onClick={() => setViewMode(mode)}
-                            className={`px-3 py-1 rounded text-sm transition-all ${viewMode === mode
+                            className={`px-3 py-1 rounded text-sm transition-all whitespace-nowrap ${viewMode === mode
                                 ? 'bg-purple-500/50 text-white'
                                 : 'text-white/60 hover:text-white'
                                 }`}
@@ -169,23 +169,26 @@ export function ExpenseHistory({ onRefresh }: ExpenseHistoryProps) {
             </div>
 
             {/* Date navigation */}
-            <div className="flex items-center justify-between mb-6 bg-white/5 rounded-lg p-3">
-                <button
-                    onClick={() => navigateDate('prev')}
-                    className="p-2 hover:bg-white/10 rounded-lg transition-colors"
-                >
-                    <ChevronLeft className="w-5 h-5" />
-                </button>
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mb-6 bg-white/5 rounded-lg p-3">
+                <div className="flex w-full sm:w-auto justify-between sm:justify-start gap-3 order-2 sm:order-1">
+                    <button
+                        onClick={() => navigateDate('prev')}
+                        className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                    >
+                        <ChevronLeft className="w-5 h-5" />
+                    </button>
+                    {/* Mobile Only Date Display (if needed, but centralized text below works well) */}
+                </div>
 
-                <div className="text-center">
-                    <p className="font-semibold capitalize">{formatDateLabel()}</p>
+                <div className="text-center order-1 sm:order-2 w-full sm:w-auto">
+                    <p className="font-semibold capitalize text-lg sm:text-base">{formatDateLabel()}</p>
                     <p className="text-sm text-white/60">{expenses.length} dépense(s)</p>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex w-full sm:w-auto justify-between sm:justify-end gap-2 order-3">
                     <button
                         onClick={goToToday}
-                        className="text-xs px-2 py-1 bg-white/10 hover:bg-white/20 rounded transition-colors"
+                        className="text-xs px-2 py-1 bg-white/10 hover:bg-white/20 rounded transition-colors whitespace-nowrap"
                     >
                         Aujourd&apos;hui
                     </button>
@@ -236,19 +239,25 @@ export function ExpenseHistory({ onRefresh }: ExpenseHistoryProps) {
                                     {items.map((expense) => (
                                         <div
                                             key={expense.id}
-                                            className="flex items-center justify-between p-3 hover:bg-white/5 transition-colors group"
+                                            className="flex items-center justify-between p-3 hover:bg-white/5 transition-colors group gap-3"
                                         >
-                                            <div className="flex-1">
-                                                <div className="flex items-center gap-2">
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex flex-wrap items-center gap-2">
                                                     {expense.subcategory && (
-                                                        <span className="text-sm text-white/70">
+                                                        <span className="text-sm text-white/70 truncate max-w-full">
                                                             {expense.subcategory}
                                                         </span>
                                                     )}
                                                     {expense.description && (
-                                                        <span className="text-xs text-white/50">
+                                                        <span className="text-xs text-white/50 truncate max-w-full hidden sm:inline">
                                                             — {expense.description}
                                                         </span>
+                                                    )}
+                                                    {/* Mobile Description on new line */}
+                                                    {expense.description && (
+                                                        <div className="text-xs text-white/50 truncate w-full sm:hidden">
+                                                            {expense.description}
+                                                        </div>
                                                     )}
                                                 </div>
                                                 <p className="text-xs text-white/40 mt-1">
@@ -258,13 +267,13 @@ export function ExpenseHistory({ onRefresh }: ExpenseHistoryProps) {
                                                     })}
                                                 </p>
                                             </div>
-                                            <div className="flex items-center gap-3">
-                                                <span className="font-medium">
+                                            <div className="flex items-center gap-3 shrink-0">
+                                                <span className="font-medium whitespace-nowrap">
                                                     {formatCurrency(expense.amount)}
                                                 </span>
                                                 <button
                                                     onClick={() => handleDelete(expense.id)}
-                                                    className="p-1 opacity-0 group-hover:opacity-100 hover:bg-red-500/20 rounded transition-all"
+                                                    className="p-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 hover:bg-red-500/20 rounded transition-all"
                                                     title="Supprimer"
                                                 >
                                                     <Trash2 className="w-4 h-4 text-red-400" />
