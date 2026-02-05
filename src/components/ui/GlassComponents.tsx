@@ -94,7 +94,7 @@ interface GlassInputProps {
     value: string;
     onChange: (value: string) => void;
     placeholder?: string;
-    type?: 'text' | 'number' | 'email' | 'search';
+    type?: 'text' | 'number' | 'email' | 'search' | 'date';
     className?: string;
     disabled?: boolean;
     required?: boolean;
