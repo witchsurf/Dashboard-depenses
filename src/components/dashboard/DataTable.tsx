@@ -20,6 +20,7 @@ interface Column {
     sortable?: boolean;
     format?: 'currency' | 'number' | 'text';
     align?: 'left' | 'center' | 'right';
+    render?: (value: any, row: any) => React.ReactNode;
 }
 
 interface DataTableProps {
@@ -28,6 +29,7 @@ interface DataTableProps {
     title?: string;
     pageSize?: number;
     exportFilename?: string;
+    isLoading?: boolean;
 }
 
 type SortDirection = 'asc' | 'desc' | null;
@@ -37,7 +39,8 @@ export function DataTable({
     columns,
     title = 'Données',
     pageSize = 10,
-    exportFilename = 'export-donnees'
+    exportFilename = 'export-donnees',
+    isLoading = false
 }: DataTableProps) {
     const [searchQuery, setSearchQuery] = useState('');
     const [sortColumn, setSortColumn] = useState<string | null>(null);
@@ -154,8 +157,44 @@ export function DataTable({
                 </div>
             </div>
 
-            {/* Table */}
-            <div className="overflow-x-auto">
+            {/* Mobile Card View (Visible on small screens) */}
+            <div className="block sm:hidden space-y-4">
+                {paginatedData.map((row) => (
+                    <div key={row.id} className="bg-white/5 rounded-lg p-4 space-y-3">
+                        <div className="flex justify-between items-start">
+                            <div className="space-y-1">
+                                <p className="font-semibold text-white">{row.category}</p>
+                                <p className="text-sm text-white/60">{new Date(row.date).toLocaleDateString('fr-FR')}</p>
+                            </div>
+                            <span className="font-bold text-lg whitespace-nowrap">
+                                {formatCurrency(Number(row.amount))}
+                            </span>
+                        </div>
+
+                        {row.subcategory && (
+                            <div className="text-sm text-white/70 bg-white/5 rounded px-2 py-1 w-fit">
+                                {row.subcategory}
+                            </div>
+                        )}
+
+                        {row.description && (
+                            <p className="text-sm text-white/50 italic border-l-2 border-white/10 pl-2">
+                                {row.description}
+                            </p>
+                        )}
+
+                        {/* Status/Type indicators if needed, derived from category or other fields */}
+                    </div>
+                ))}
+                {paginatedData.length === 0 && (
+                    <div className="text-center py-8 text-white/50">
+                        Aucun résultat trouvé
+                    </div>
+                )}
+            </div>
+
+            {/* Desktop/Tablet Table View (Hidden on small screens) */}
+            <div className="hidden sm:block overflow-x-auto">
                 <table className="data-table min-w-[800px]">
                     <thead>
                         <tr>
@@ -182,24 +221,27 @@ export function DataTable({
                         </tr>
                     </thead>
                     <tbody>
-                        {paginatedData.length === 0 ? (
+                        {isLoading ? (
                             <tr>
-                                <td colSpan={columns.length} className="text-center py-8 text-white/50">
-                                    {searchQuery ? 'Aucun résultat trouvé' : 'Aucune donnée disponible'}
+                                <td colSpan={columns.length} className="text-center py-8">
+                                    Chargement...
+                                </td>
+                            </tr>
+                        ) : paginatedData.length === 0 ? (
+                            <tr>
+                                <td colSpan={columns.length} className="text-center py-8">
+                                    Aucun résultat trouvé
                                 </td>
                             </tr>
                         ) : (
-                            paginatedData.map((row, rowIndex) => (
-                                <tr key={rowIndex}>
+                            paginatedData.map((row) => (
+                                <tr key={row.id} className="hover:bg-white/5 transition-colors">
                                     {columns.map((col) => (
                                         <td
-                                            key={col.key}
-                                            className={`
-                        ${col.align === 'right' ? 'text-right' : col.align === 'center' ? 'text-center' : ''}
-                        ${typeof row[col.key] === 'number' ? 'font-mono' : ''}
-                      `}
+                                            key={`${row.id}-${col.key}`}
+                                            className={col.align === 'right' ? 'text-right' : col.align === 'center' ? 'text-center' : 'text-left'}
                                         >
-                                            {formatValue(row[col.key], col.format)}
+                                            {col.render ? col.render(row[col.key], row) : formatValue(row[col.key], col.format)}
                                         </td>
                                     ))}
                                 </tr>
