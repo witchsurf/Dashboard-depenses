@@ -15,6 +15,7 @@ import {
     DataTable,
     Filters,
     CategoryDetailModal,
+    EditTransactionModal,
 } from '@/components/dashboard';
 import { GlassButton, GlassCard } from '@/components/ui/GlassComponents';
 import { formatCurrency } from '@/lib/utils';
@@ -62,6 +63,7 @@ export default function DashboardPage() {
         searchQuery: '',
     });
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+    const [editingTransaction, setEditingTransaction] = useState<any | null>(null);
 
     const loadData = useCallback(async () => {
         setIsLoading(true);
@@ -71,8 +73,14 @@ export default function DashboardPage() {
             // Format date as YYYY-MM for API
             const monthStr = format(selectedMonth, 'yyyy-MM');
 
-            // Add timestamp to prevent browser caching
-            const response = await fetch(`/api/dashboard?t=${Date.now()}&month=${monthStr}`);
+            // Handle custom date range from filters
+            let url = `/api/dashboard?t=${Date.now()}&month=${monthStr}`;
+            if (activeSection === 'filters' && (filters.dateRange.start || filters.dateRange.end)) {
+                if (filters.dateRange.start) url += `&startDate=${filters.dateRange.start.toISOString().split('T')[0]}`;
+                if (filters.dateRange.end) url += `&endDate=${filters.dateRange.end.toISOString().split('T')[0]}`;
+            }
+
+            const response = await fetch(url);
             const result = await response.json();
 
             if (result.success) {
@@ -90,7 +98,7 @@ export default function DashboardPage() {
 
     useEffect(() => {
         loadData();
-    }, [loadData]);
+    }, [loadData, activeSection]); // Reload when switching to filters section to apply range
 
     const filteredTransactions = useMemo(() => {
         if (!data) return [];
@@ -356,6 +364,7 @@ export default function DashboardPage() {
                                     { key: 'amount', label: 'Montant', sortable: true, format: 'currency', align: 'right' },
                                     { key: 'type', label: 'Type', sortable: true }
                                 ]}
+                                onEdit={setEditingTransaction}
                             />
                         )}
 
@@ -381,6 +390,7 @@ export default function DashboardPage() {
                                         { key: 'amount', label: 'Montant', sortable: true, format: 'currency', align: 'right' },
                                         { key: 'type', label: 'Type', sortable: true }
                                     ]}
+                                    onEdit={setEditingTransaction}
                                 />
                             </div>
                         )}
@@ -435,6 +445,15 @@ export default function DashboardPage() {
                 onClose={() => setSelectedCategory(null)}
                 category={selectedCategory || ''}
                 month={selectedMonth}
+            />
+            <EditTransactionModal
+                isOpen={!!editingTransaction}
+                onClose={() => setEditingTransaction(null)}
+                onUpdated={() => {
+                    setEditingTransaction(null);
+                    loadData();
+                }}
+                transaction={editingTransaction}
             />
         </main>
     );

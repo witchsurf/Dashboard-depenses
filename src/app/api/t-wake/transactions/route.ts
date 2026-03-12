@@ -110,3 +110,38 @@ export async function POST(request: Request) {
         }, { status: 500 });
     }
 }
+
+export async function PATCH(request: Request) {
+    try {
+        const body = await request.json();
+        const { id, product_id, date, quantity, description } = body;
+
+        if (!id) {
+            return NextResponse.json({ success: false, error: 'Missing ID' }, { status: 400 });
+        }
+
+        const supabase = getSupabaseClient();
+        const { data, error } = await supabase
+            .from('t_wake_transactions')
+            .update({
+                product_id,
+                date,
+                quantity,
+                description,
+                updated_at: new Date().toISOString(),
+            })
+            .eq('id', id)
+            .select()
+            .single();
+
+        if (error) throw error;
+
+        return NextResponse.json({ success: true, transaction: data });
+
+    } catch (error) {
+        return NextResponse.json({
+            success: false,
+            error: error instanceof Error ? error.message : 'Unknown error'
+        }, { status: 500 });
+    }
+}

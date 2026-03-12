@@ -204,3 +204,60 @@ export async function DELETE(request: Request) {
         );
     }
 }
+/**
+ * PATCH /api/expenses - Update existing expense
+ */
+export async function PATCH(request: Request) {
+    try {
+        const body = await request.json();
+        const { id, date, amount, category, subcategory, description } = body;
+
+        if (!id) {
+            return NextResponse.json(
+                { success: false, error: 'Missing expense ID' },
+                { status: 400 }
+            );
+        }
+
+        const supabase = getSupabaseClient();
+
+        if (!supabase) {
+            return NextResponse.json({
+                success: false,
+                error: 'Supabase not configured',
+            }, { status: 500 });
+        }
+
+        const { data, error } = await supabase
+            .from('expenses')
+            .update({
+                date,
+                amount,
+                category,
+                subcategory,
+                description,
+                updated_at: new Date().toISOString(),
+            })
+            .eq('id', id)
+            .select()
+            .single();
+
+        if (error) throw error;
+
+        return NextResponse.json({
+            success: true,
+            message: 'Expense updated',
+            data,
+        });
+
+    } catch (error) {
+        console.error('Expense PATCH Error:', error);
+        return NextResponse.json(
+            {
+                success: false,
+                error: error instanceof Error ? error.message : 'Unknown error'
+            },
+            { status: 500 }
+        );
+    }
+}

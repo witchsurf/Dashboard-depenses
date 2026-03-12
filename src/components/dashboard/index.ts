@@ -14,3 +14,4 @@ export { ExpenseHistory } from './ExpenseHistory';
 export { TWake } from './TWake';
 export { AddProductModal } from './AddProductModal';
 export { AddSaleModal } from './AddSaleModal';
+export { EditTransactionModal } from './EditTransactionModal';

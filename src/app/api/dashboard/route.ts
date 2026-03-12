@@ -41,6 +41,8 @@ export async function GET(request: Request) {
 
         const { searchParams } = new URL(request.url);
         const monthParam = searchParams.get('month'); // YYYY-MM
+        const startDateParam = searchParams.get('startDate'); // YYYY-MM-DD
+        const endDateParam = searchParams.get('endDate'); // YYYY-MM-DD
 
         let targetDate = new Date();
         if (monthParam) {
@@ -51,23 +53,31 @@ export async function GET(request: Request) {
         }
 
         // Calculate dynamic dates
-        // Month start: 1st of target month
-        const monthStart = targetDate.toISOString().slice(0, 8) + '01'; // YYYY-MM-01
+        // Default to whole month if no specific range provided
+        let queryStart = startDateParam;
+        let queryEnd = endDateParam;
 
-        // Month end: 1st of next month (for < comparison)
-        const nextMonth = new Date(targetDate);
-        nextMonth.setMonth(nextMonth.getMonth() + 1);
-        nextMonth.setDate(1);
-        const monthEnd = nextMonth.toISOString().slice(0, 10);
+        if (!queryStart || !queryEnd) {
+            // Month start: 1st of target month
+            queryStart = targetDate.toISOString().slice(0, 8) + '01'; // YYYY-MM-01
 
-        console.log('Dashboard API - Dynamic Date:', { monthStart, monthEnd, target: monthParam || 'current' });
+            // Month end: 1st of next month (for < comparison)
+            const nextMonth = new Date(targetDate);
+            nextMonth.setMonth(nextMonth.getMonth() + 1);
+            nextMonth.setDate(1);
+            queryEnd = nextMonth.toISOString().slice(0, 10);
+        }
+
+        console.log('Dashboard API - Range:', { queryStart, queryEnd, target: monthParam || 'custom' });
+
+        console.log('Dashboard API - Dynamic Date:', { queryStart, queryEnd, target: monthParam || 'current' });
 
         // Fetch expenses for selected month
         const { data: monthlyExpenses, error: expenseError } = await supabase
             .from('expenses')
             .select('id, date, amount, category, description, created_at')
-            .gte('date', monthStart)
-            .lt('date', monthEnd);
+            .gte('date', queryStart)
+            .lt('date', queryEnd);
 
         if (expenseError) {
             console.error('Expense query error:', expenseError);
@@ -84,8 +94,8 @@ export async function GET(request: Request) {
         const { data: monthlyIncome, error: incomeError } = await supabase
             .from('income')
             .select('id, date, amount, source, description, created_at')
-            .gte('date', monthStart)
-            .lt('date', monthEnd);
+            .gte('date', queryStart)
+            .lt('date', queryEnd);
 
         if (incomeError) {
             console.error('Income query error:', incomeError);
@@ -103,8 +113,8 @@ export async function GET(request: Request) {
                     description,
                     product:t_wake_products (selling_price, unit_cost)
                 `)
-                .gte('date', monthStart)
-                .lt('date', monthEnd);
+                .gte('date', queryStart)
+                .lt('date', queryEnd);
 
             tWakeTxs = result.data;
             const tWakeError = result.error;
@@ -130,7 +140,7 @@ export async function GET(request: Request) {
             prevMonth.setMonth(prevMonth.getMonth() - 1);
             prevMonth.setDate(1);
             const prevMonthStart = prevMonth.toISOString().slice(0, 10);
-            const prevMonthEnd = monthStart; // Current month start is prev month end
+            const prevMonthEnd = queryStart; // Use start of selected range as end of previous range
 
             console.log('Dashboard API - Previous Month Range:', { prevMonthStart, prevMonthEnd });
 
@@ -359,8 +369,8 @@ export async function GET(request: Request) {
                     tWakeTotal: tWakeTxs?.length || 0,
                     // Show dates of first 5 items to debug format if needed
                     tWakeDates: tWakeTxs?.slice(0, 5).map((t: any) => t.date),
-                    monthStart,
-                    monthEnd,
+                    queryStart,
+                    queryEnd,
                     monthlyExpenseIds: monthlyExpenses?.map(e => e.id) || []
                 }
             },

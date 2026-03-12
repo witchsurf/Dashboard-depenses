@@ -9,7 +9,8 @@ import {
     Download,
     Search,
     ChevronsLeft,
-    ChevronsRight
+    ChevronsRight,
+    Edit2
 } from 'lucide-react';
 import { GlassCard, GlassButton, GlassInput } from '../ui/GlassComponents';
 import { formatCurrency, exportToCSV } from '@/lib/utils';
@@ -30,6 +31,7 @@ interface DataTableProps {
     pageSize?: number;
     exportFilename?: string;
     isLoading?: boolean;
+    onEdit?: (row: any) => void;
 }
 
 type SortDirection = 'asc' | 'desc' | null;
@@ -40,7 +42,8 @@ export function DataTable({
     title = 'Données',
     pageSize = 10,
     exportFilename = 'export-donnees',
-    isLoading = false
+    isLoading = false,
+    onEdit
 }: DataTableProps) {
     const [searchQuery, setSearchQuery] = useState('');
     const [sortColumn, setSortColumn] = useState<string | null>(null);
@@ -244,6 +247,18 @@ export function DataTable({
                                             {col.render ? col.render(row[col.key], row) : formatValue(row[col.key], col.format)}
                                         </td>
                                     ))}
+                                    {onEdit && (
+                                        <td className="text-right">
+                                            <GlassButton
+                                                onClick={() => onEdit(row)}
+                                                variant="ghost"
+                                                size="sm"
+                                                className="hover:text-purple-400"
+                                            >
+                                                <Edit2 className="w-4 h-4" />
+                                            </GlassButton>
+                                        </td>
+                                    )}
                                 </tr>
                             ))
                         )}
@@ -251,7 +266,7 @@ export function DataTable({
                 </table>
             </div>
 
-            {/* Footer with total and pagination */}
+            {/* Total Footer Fix */}
             <div className="p-4 border-t border-white/10 flex flex-col md:flex-row gap-4 items-center justify-between">
                 <div className="text-center md:text-left">
                     <p className="text-sm text-white/60">
@@ -261,7 +276,15 @@ export function DataTable({
                     {sortedData.length > 0 && columns.some(c => c.key === 'amount') && (
                         <p className="text-lg font-bold text-purple-400 mt-1">
                             Total: {formatCurrency(
-                                sortedData.reduce((sum, row) => sum + (Number(row.amount) || 0), 0)
+                                sortedData.reduce((sum, row) => {
+                                    const amount = Number(row.amount) || 0;
+                                    // If type is income, it's positive; if expense, it should be treated as negative for the total sum
+                                    // unless the amount itself is already signed correctly from the API.
+                                    // Looking at Dashboard API, expenses are positive numbers but represent costs.
+                                    // However, in the filtered list, we want a net total.
+                                    if (row.type === 'expense') return sum - amount;
+                                    return sum + amount;
+                                }, 0)
                             )}
                         </p>
                     )}
