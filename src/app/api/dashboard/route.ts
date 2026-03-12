@@ -132,64 +132,54 @@ export async function GET(request: Request) {
         }
         // -----------------------------------------------------
 
-        // --- CARRYOVER: Calculate Previous Month Balance ---
+        // --- CARRYOVER: Calculate Cumulative Balance before selected period ---
         let carryoverBalance = 0;
         try {
-            // Calculate previous month dates
-            const prevMonth = new Date(targetDate);
-            prevMonth.setMonth(prevMonth.getMonth() - 1);
-            prevMonth.setDate(1);
-            const prevMonthStart = prevMonth.toISOString().slice(0, 10);
-            const prevMonthEnd = queryStart; // Use start of selected range as end of previous range
-
-            console.log('Dashboard API - Previous Month Range:', { prevMonthStart, prevMonthEnd });
-
-            // Fetch previous month expenses
-            const { data: prevExpenses } = await supabase
+            // Fetch ALL expenses before queryStart
+            const { data: allPrevExpenses } = await supabase
                 .from('expenses')
                 .select('amount')
-                .gte('date', prevMonthStart)
-                .lt('date', prevMonthEnd);
+                .lt('date', queryStart);
 
-            // Fetch previous month income
-            const { data: prevIncome } = await supabase
+            // Fetch ALL income before queryStart
+            const { data: allPrevIncome } = await supabase
                 .from('income')
                 .select('amount, source')
-                .gte('date', prevMonthStart)
-                .lt('date', prevMonthEnd);
+                .lt('date', queryStart);
 
-            // Fetch previous month T-WAKE profit
-            let prevTWakeProfit = 0;
-            const { data: prevTWakeTxs } = await supabase
+            // Fetch ALL T-WAKE transactions before queryStart
+            let totalPrevTWakeProfit = 0;
+            const { data: allPrevTWakeTxs } = await supabase
                 .from('t_wake_transactions')
                 .select(`
                     quantity,
                     product:t_wake_products (selling_price, unit_cost)
                 `)
-                .gte('date', prevMonthStart)
-                .lt('date', prevMonthEnd);
+                .lt('date', queryStart);
 
-            if (prevTWakeTxs) {
-                prevTWakeProfit = prevTWakeTxs.reduce((sum, t: any) => {
+            if (allPrevTWakeTxs) {
+                totalPrevTWakeProfit = allPrevTWakeTxs.reduce((sum, t: any) => {
                     if (!t.product) return sum;
                     const margin = t.product.selling_price - t.product.unit_cost;
                     return sum + (Number(t.quantity) * margin);
                 }, 0);
             }
 
-            // Calculate totals for previous month
-            const prevTotalExpenses = prevExpenses?.reduce((sum, e) => sum + Number(e.amount), 0) || 0;
-            const prevBaseIncome = prevIncome?.reduce((sum, i) => {
+            // Calculate totals
+            const prevTotalExpenses = allPrevExpenses?.reduce((sum, e) => sum + Number(e.amount), 0) || 0;
+            const prevBaseIncome = allPrevIncome?.reduce((sum, i) => {
                 if (i.source === 'T-wake/LP') return sum; // Skip static import
                 return sum + Number(i.amount);
             }, 0) || 0;
-            const prevTotalIncome = prevBaseIncome + prevTWakeProfit;
+
+            const prevTotalIncome = prevBaseIncome + totalPrevTWakeProfit;
 
             carryoverBalance = prevTotalIncome - prevTotalExpenses;
-            console.log('Dashboard API - Previous Month Balance:', carryoverBalance);
+            console.log('Dashboard API - Cumulative Carryover Balance:', carryoverBalance);
         } catch (carryoverError) {
             console.error('Failed to calculate carryover balance:', carryoverError);
         }
+        // ---------------------------------------------------
         // ---------------------------------------------------
 
         console.log('Monthly income found:', monthlyIncome?.length);
