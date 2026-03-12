@@ -290,7 +290,8 @@ export default function DashboardPage() {
                                             {data.recentTransactions.slice(0, 5).map((tx) => (
                                                 <div
                                                     key={tx.id}
-                                                    className="flex items-center justify-between p-3 bg-white/5 rounded-lg"
+                                                    onClick={() => setEditingTransaction(tx)}
+                                                    className="flex items-center justify-between p-3 bg-white/5 rounded-lg cursor-pointer hover:bg-white/10 transition-colors group"
                                                 >
                                                     <div>
                                                         <p className="font-medium">{tx.category}</p>
